@@ -1,0 +1,10 @@
+{
+  "name": "surface-hint",
+  "description": "Example NDJSON script plugin (echoes targets/ports as Event::Log)",
+  "version": "0.1.0",
+  "capabilities": ["passive", "interact"],
+  "emit": "ndjson",
+  "default_ports": [80, 443],
+  "timeout_secs": 30,
+  "command": "powershell -NoProfile -File run.ps1"
+}

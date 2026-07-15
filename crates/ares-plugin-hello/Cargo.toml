@@ -1,0 +1,12 @@
+[package]
+name = "ares-plugin-hello"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Example native AresBird plugin (cdylib ABI v1)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serde_json = { workspace = true }

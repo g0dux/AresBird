@@ -1,0 +1,7 @@
+{
+  "id": "_template",
+  "description": "Scaffold — dirs starting with _ are not loaded as packs",
+  "version": "0.1.0",
+  "safe": true,
+  "builtins": []
+}

@@ -1,0 +1,8 @@
+{
+  "name": "echo-lab",
+  "description": "Example external script plugin (prints targets)",
+  "version": "0.1.0",
+  "capabilities": ["passive"],
+  "emit": "log",
+  "command": "echo AresBird external plugin ok — targets=%ARES_TARGETS%"
+}

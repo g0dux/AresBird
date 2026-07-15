@@ -1,0 +1,18 @@
+[package]
+name = "ares-probe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AresBird service probes, banners, and fingerprint helpers"
+
+[dependencies]
+ares-core = { workspace = true }
+ares-net = { workspace = true }
+ares-proto = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+regex = { workspace = true }
+async-trait = { workspace = true }

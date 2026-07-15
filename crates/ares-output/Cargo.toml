@@ -1,0 +1,24 @@
+[package]
+name = "ares-output"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AresBird smart renderers, JSON/NDJSON, tables, diff, SQLite persistence"
+
+[features]
+default = ["sqlite"]
+sqlite = ["rusqlite"]
+
+[dependencies]
+ares-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+comfy-table = { workspace = true }
+console = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { workspace = true, optional = true }
+dirs = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }

@@ -1,0 +1,103 @@
+# Example CI: build AresProbe and fail when NEW misconfig findings appear.
+#
+# Usage:
+#   1. Set TARGET (host you are authorized to test).
+#   2. First successful job creates a baseline in .ares-data/runs.db (artifact).
+#   3. Later jobs fail (exit 2) if medium+ findings are new vs that baseline.
+#
+# Optional repo vars/secrets:
+#   vars.ARES_TARGET          — default target host
+#   secrets.ARES_NOTIFY_URL   — webhook for --notify
+
+name: ares-misconfig
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Host/IP to test (authorized lab only)
+        required: true
+        default: "127.0.0.1"
+      min_severity:
+        description: info|low|medium|high
+        required: true
+        default: "medium"
+      ports:
+        description: Port list or preset (web|apps|443,…)
+        required: true
+        default: "web"
+  # Uncomment to schedule (only after TARGET is safe/lab):
+  # schedule:
+  #   - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  misconfig:
+    runs-on: ubuntu-latest
+    env:
+      ARES_DATA_DIR: ${{ github.workspace }}/.ares-data
+      ARES_QUIET: "1"
+      TARGET: ${{ inputs.target || vars.ARES_TARGET || '127.0.0.1' }}
+      MIN_SEV: ${{ inputs.min_severity || 'medium' }}
+      PORTS: ${{ inputs.ports || 'web' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Restore prior runs.db baseline
+        uses: actions/cache@v4
+        with:
+          path: .ares-data
+          key: ares-store-${{ runner.os }}-${{ hashFiles('crates/**/*.rs') }}
+          restore-keys: |
+            ares-store-${{ runner.os }}-
+
+      - name: Build ares
+        run: cargo build -p ares-cli --release
+
+      - name: Seed baseline if missing
+        run: |
+          set -euo pipefail
+          BIN=./target/release/ares
+          mkdir -p "$ARES_DATA_DIR"
+          # First run without --fail-on-new becomes the baseline for later diffs.
+          "$BIN" test "$TARGET" -p "$PORTS" --no-path-probes --save -q --format csv || true
+
+      - name: Fail on new findings
+        env:
+          NOTIFY: ${{ secrets.ARES_NOTIFY_URL }}
+        run: |
+          set -euo pipefail
+          BIN=./target/release/ares
+          ARGS=(test "$TARGET" -p "$PORTS" --no-path-probes --save
+                --fail-on-new --min-severity "$MIN_SEV" -q --format csv)
+          if [ -n "${NOTIFY:-}" ]; then
+            ARGS+=(--notify "$NOTIFY" --notify-on new)
+          fi
+          set +e
+          "$BIN" "${ARGS[@]}"
+          code=$?
+          set -e
+          # Exit 2 = new findings; other non-zero = hard failure
+          if [ "$code" -eq 2 ]; then
+            echo "::error::New misconfig findings ≥ $MIN_SEV vs baseline"
+            exit 2
+          fi
+          if [ "$code" -ne 0 ]; then
+            exit "$code"
+          fi
+
+      - name: Upload store + CSV hint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ares-misconfig-${{ github.run_id }}
+          path: .ares-data/
+          if-no-files-found: ignore

@@ -1,0 +1,11 @@
+{
+  "name": "my-plugin",
+  "description": "Copy this folder (drop the leading _) and customize",
+  "version": "0.1.0",
+  "author": "you",
+  "capabilities": ["passive"],
+  "emit": "ndjson",
+  "default_ports": [],
+  "timeout_secs": 30,
+  "command": "powershell -NoProfile -File run.ps1"
+}

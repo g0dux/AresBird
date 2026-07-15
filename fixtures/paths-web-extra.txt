@@ -1,0 +1,16 @@
+# Extra sensitive path observes (one per line). Used by:
+#   ares test … --paths-file fixtures/paths-web-extra.txt
+#   pipeline extra.paths_file
+#
+# Only report findings when response body matches known fingerprints.
+
+/.git/HEAD
+/.env
+/actuator/env
+/swagger-ui/
+/v3/api-docs
+/graphql
+/robots.txt
+/.well-known/security.txt
+/backup.zip
+/phpinfo.php

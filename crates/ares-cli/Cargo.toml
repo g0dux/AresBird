@@ -1,0 +1,44 @@
+[package]
+name = "ares-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AresBird CLI — network interaction Swiss-army knife"
+default-run = "ares"
+
+[[bin]]
+name = "ares"
+path = "src/main.rs"
+
+[features]
+default = []
+raw = ["ares-net/raw", "ares-modules/raw"]
+
+[dependencies]
+ares-core = { workspace = true }
+ares-net = { workspace = true }
+ares-proto = { workspace = true }
+ares-probe = { workspace = true }
+ares-output = { workspace = true }
+ares-plugin-api = { workspace = true }
+ares-modules = { workspace = true }
+tokio = { workspace = true }
+clap = { workspace = true }
+indicatif = { workspace = true }
+console = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+ipnet = { workspace = true }
+dirs = { workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true }
+tokio-util = { workspace = true }
+url = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }

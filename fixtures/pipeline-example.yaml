@@ -1,0 +1,14 @@
+name: lab-recon-scan-talk
+mode: fast
+targets:
+  - 127.0.0.1
+steps:
+  - module: discover
+  - module: scan
+    ports: "22,80,135,445,443,8080"
+  - module: service
+    ports: "135,445"
+  - module: asn
+  - module: talk
+    extra:
+      proto: ssh

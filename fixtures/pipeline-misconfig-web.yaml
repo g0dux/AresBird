@@ -1,0 +1,18 @@
+# Web listeners: scan → service → HTTP(S) misconfig with broader path profile
+name: misconfig-web
+mode: normal
+targets:
+  - 127.0.0.1
+steps:
+  - module: discover
+  - module: scan
+    ports: web
+  - module: service
+    ports: web
+  - module: active-misconfig
+    ports: web
+    extra:
+      path_probes: true
+      path_profile: web
+      path_delay_ms: 100
+      paths_file: fixtures/paths-web-extra.txt

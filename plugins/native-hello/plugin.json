@@ -1,0 +1,10 @@
+{
+  "name": "native-hello",
+  "description": "Example native ABI plugin",
+  "version": "0.1.0",
+  "capabilities": ["passive"],
+  "prefer": "command",
+  "timeout_secs": 15,
+  "library": "ares_plugin_hello.dll",
+  "command": "echo fallback-script-for-native-hello targets=%ARES_TARGETS%"
+}

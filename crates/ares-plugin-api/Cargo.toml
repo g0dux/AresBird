@@ -1,0 +1,17 @@
+[package]
+name = "ares-plugin-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Plugin API traits and capability model for AresBird"
+
+[dependencies]
+ares-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+parking_lot = { workspace = true }
+tokio-util = { workspace = true }
+tokio = { workspace = true }
+libloading = { workspace = true }
+dirs = { workspace = true }

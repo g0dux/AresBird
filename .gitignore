@@ -1,0 +1,9 @@
+/target/
+**/target/
+*.pdb
+.idea/
+.vscode/
+*.db
+*.sqlite
+.env
+.ares-data/

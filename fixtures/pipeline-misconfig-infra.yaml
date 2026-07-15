@@ -1,0 +1,15 @@
+# Identity / Windows surface + misconfig (LDAP/WinRM/Kerberos/VNC…)
+name: misconfig-infra
+mode: normal
+targets:
+  - 127.0.0.1
+steps:
+  - module: discover
+  - module: scan
+    ports: infra
+  - module: service
+    ports: infra
+  - module: active-misconfig
+    ports: infra
+    extra:
+      path_probes: false

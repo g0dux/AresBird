@@ -1,0 +1,28 @@
+[package]
+name = "ares-net"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AresBird transport layer: TCP/UDP/ICMP, rate limiting, connect & raw scan"
+
+[features]
+default = ["connect-scan"]
+connect-scan = []
+raw = ["pnet", "ipnetwork"]
+
+[dependencies]
+ares-core = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+ipnet = { workspace = true }
+parking_lot = { workspace = true }
+tokio-util = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+socket2 = { workspace = true }
+pnet = { workspace = true, optional = true }
+ipnetwork = { version = "0.20", optional = true }
