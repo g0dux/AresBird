@@ -1016,12 +1016,14 @@ mod tests {
             use_tls: false,
             sni: None,
         };
-        let next = resolve_redirect(&from, "https://secure.example.com/login")
+        // Use a literal IP so CI does not depend on external DNS.
+        let next = resolve_redirect(&from, "https://127.0.0.1/login")
             .await
             .unwrap();
         assert!(next.use_tls);
         assert_eq!(next.port, 443);
-        assert_eq!(next.host, "secure.example.com");
+        assert_eq!(next.host, "127.0.0.1");
         assert_eq!(next.path, "/login");
+        assert_eq!(next.addr.to_string(), "127.0.0.1");
     }
 }
