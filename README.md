@@ -11,10 +11,11 @@ High-performance **network interaction engine** (Swiss-army knife) written in Ru
 Build lands under `%LOCALAPPDATA%\aresbird-target` (avoids Smart App Control on Desktop):
 
 ```powershell
-$env:CARGO_TARGET_DIR = "$env:LOCALAPPDATA\aresbird-target"
 cargo build -p ares-cli --release
-. .\scripts\path-aresbird.ps1          # this session
-# . .\scripts\path-aresbird.ps1 -PersistUser   # optional: permanent user PATH
+# if SAC blocks release build scripts (os error 4551):
+cargo build -p ares-cli --profile dist
+. .\scripts\path-aresbird.ps1          # release → dist → debug
+# . .\scripts\path-aresbird.ps1 -PersistUser
 ares doctor
 ```
 
@@ -102,7 +103,7 @@ ares report export --min-severity high --format csv
 ares report export --format md --out report.md
 ```
 
-> **Windows note:** target dir is `%LOCALAPPDATA%\aresbird-target` (see `.cargo/config.toml`) to avoid Smart App Control blocking Desktop builds.
+> **Windows / Smart App Control:** target dir is `%LOCALAPPDATA%\aresbird-target` (not Desktop). TLS is **ring-only** (no `aws-lc-sys`). If `cargo build --release` fails with os error **4551** (SAC blocked a `build-script-build`), use `cargo build -p ares-cli --profile dist` or fall back to debug + `. .\scripts\path-aresbird.ps1 -DebugBuild`.
 
 ## Commands
 

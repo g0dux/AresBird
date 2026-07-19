@@ -1,7 +1,8 @@
-# Add AresBird release build to the current PowerShell session PATH.
+# Add AresBird build to the current PowerShell session PATH.
 # Usage (from repo root or anywhere):
 #   . .\scripts\path-aresbird.ps1
 # Optional: -DebugBuild to prefer debug\ares.exe
+# Default order: release → dist → debug
 
 param(
     [switch]$DebugBuild,
@@ -9,19 +10,38 @@ param(
 )
 
 $root = Join-Path $env:LOCALAPPDATA "aresbird-target"
-$dir = if ($DebugBuild) {
-    Join-Path $root "debug"
+$candidates = @(
+    (Join-Path $root "release"),
+    (Join-Path $root "dist"),
+    (Join-Path $root "debug")
+)
+
+$dir = $null
+if ($DebugBuild) {
+    $dir = Join-Path $root "debug"
 } else {
-    Join-Path $root "release"
+    foreach ($c in $candidates) {
+        if (Test-Path (Join-Path $c "ares.exe")) {
+            $dir = $c
+            break
+        }
+    }
+    if (-not $dir) { $dir = $candidates[0] }
 }
+
 $exe = Join-Path $dir "ares.exe"
 
 if (-not (Test-Path $exe)) {
     Write-Host "ares.exe not found at $exe"
-    Write-Host "Build first:"
-    Write-Host '  $env:CARGO_TARGET_DIR = "$env:LOCALAPPDATA\aresbird-target"'
+    Write-Host "Build first (artifacts under LOCALAPPDATA; avoids SAC on Desktop sources):"
     Write-Host "  cargo build -p ares-cli --release"
+    Write-Host "  # or if SAC blocks release (4551): cargo build -p ares-cli --profile dist"
+    Write-Host "  # or: cargo build -p ares-cli"
     exit 1
+}
+
+if ($dir -like "*\debug" -and -not $DebugBuild) {
+    Write-Host "using debug build (release/dist not found)"
 }
 
 $env:Path = "$dir;$env:Path"
