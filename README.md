@@ -168,3 +168,9 @@ Cargo workspace under `crates/`:
 - `ares-plugin-api` — Capability model + Module trait + dynamic plugin loader
 - `ares-modules` — built-in discover / scan / service / fingerprint / recon / talk / path / active
 - `ares-cli` — `ares` binary
+
+## License
+
+**GPL-3.0** — você pode usar, estudar, modificar e redistribuir AresBird livremente.
+
+Não pode fechar o código em um fork proprietário: alterações e obras derivadas precisam permanecer sob GPL-3.0 (com atribuição). Ver [LICENSE](LICENSE).

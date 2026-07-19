@@ -15,9 +15,9 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-license = "MIT"
-authors = ["AresBird Contributors"]
-repository = "https://github.com/aresbird/aresbird"
+license = "GPL-3.0-only"
+authors = ["g0dux"]
+repository = "https://github.com/g0dux/AresBird"
 
 [workspace.dependencies]
 ares-core = { path = "crates/ares-core" }
