@@ -43,6 +43,8 @@ Download from: https://github.com/g0dux/AresBird/releases
 ares scan 127.0.0.1 -p top100 --mode fast --service
 ares scan 127.0.0.1 -p apps --script-pack default
 ares scan 127.0.0.1 -p web --script-pack web
+ares scan 127.0.0.1 -p apps --script-pack exposure
+ares scan 127.0.0.1 -p 2375,2379,8500,9090 --script-pack cloud
 ares scripts list
 ares scripts info redis-info
 ares probe quick 127.0.0.1

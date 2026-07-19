@@ -1,0 +1,14 @@
+{
+  "name": "control-plane-hint",
+  "description": "Light HTTP GET common control-plane paths; emit probe_result lines",
+  "version": "0.1.0",
+  "capabilities": ["passive"],
+  "categories": ["safe", "cloud"],
+  "emit": "ndjson",
+  "default_ports": [2375, 2379, 6443, 8500, 9000, 9090, 3000],
+  "timeout_secs": 20,
+  "protocol": "tcp",
+  "command": "powershell -NoProfile -File run.ps1",
+  "command_windows": "powershell -NoProfile -File run.ps1",
+  "command_unix": "sh run.sh"
+}

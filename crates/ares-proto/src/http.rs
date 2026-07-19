@@ -907,6 +907,24 @@ pub fn assess_security_headers(headers: &[(String, String)], https: bool) -> Vec
         }
     }
 
+    // Debug / timing headers often left on in production
+    for (name, label) in [
+        ("x-debug", "X-Debug"),
+        ("x-runtime", "X-Runtime"),
+        ("x-request-id-debug", "X-Request-Id-Debug"),
+        (
+            "x-aspnet-request-queue-count",
+            "X-AspNet-Request-Queue-Count",
+        ),
+    ] {
+        if let Some((_, v)) = lower.iter().find(|(k, _)| k == name) {
+            out.push(SecHeaderFinding {
+                message: format!("Debug header exposed via {label}: {v}"),
+                severity: "low",
+            });
+        }
+    }
+
     // Permissive CORS
     if let Some((_, acao)) = lower
         .iter()
@@ -1025,5 +1043,20 @@ mod tests {
         assert_eq!(next.host, "127.0.0.1");
         assert_eq!(next.path, "/login");
         assert_eq!(next.addr.to_string(), "127.0.0.1");
+    }
+
+    #[test]
+    fn flags_debug_headers() {
+        let headers = vec![
+            ("X-Runtime".into(), "12ms".into()),
+            ("X-Debug".into(), "1".into()),
+        ];
+        let findings = assess_security_headers(&headers, false);
+        assert!(findings
+            .iter()
+            .any(|f| f.message.contains("Debug header") && f.message.contains("X-Runtime")));
+        assert!(findings
+            .iter()
+            .any(|f| f.message.contains("Debug header") && f.message.contains("X-Debug")));
     }
 }

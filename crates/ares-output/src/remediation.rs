@@ -144,6 +144,34 @@ pub fn remediation_for(finding: &str) -> Option<&'static str> {
     if f.contains("winrm") {
         return Some("Restrict WinRM to management jump hosts; prefer HTTPS listener + firewall.");
     }
+    if f.contains("nats") {
+        return Some("Enable NATS auth (token/nkey/TLS); do not expose client port publicly.");
+    }
+    if f.contains("clickhouse") {
+        return Some("Require auth; bind privately; disable default user remote access.");
+    }
+    if f.contains("bolt exposed") || (f.contains("bolt") && f.contains("neo4j")) {
+        return Some("Require Neo4j auth; TLS; restrict Bolt (7687) to app tier.");
+    }
+    if f.contains("debug header") || f.contains("x-debug") || f.contains("x-runtime") {
+        return Some(
+            "Strip debug/timing headers (`X-Debug`, `X-Runtime`, `X-Powered-By`) at the proxy.",
+        );
+    }
+    if f.contains("options method") {
+        return Some("Limit OPTIONS to CORS preflight needs; avoid echoing allow-all methods.");
+    }
+    if f.contains("control-plane path") {
+        return Some(
+            "Require auth on control-plane APIs; bind to private networks; block public ingress.",
+        );
+    }
+    if f.contains("port") && f.contains("open — verify auth") {
+        return Some("Confirm auth is required; restrict to private networks / jump hosts; close unused listeners.");
+    }
+    if f.contains("open|filtered") {
+        return None;
+    }
     None
 }
 
@@ -157,8 +185,14 @@ mod tests {
             .unwrap()
             .to_ascii_lowercase()
             .contains("requirepass"));
-        assert!(remediation_for("Missing security header: strict-transport-security")
-            .is_some());
+        assert!(remediation_for("Missing security header: strict-transport-security").is_some());
         assert!(remediation_for("totally unknown finding xyz").is_none());
+        assert!(
+            remediation_for("NATS INFO greeting reachable — verify auth")
+                .unwrap()
+                .to_ascii_lowercase()
+                .contains("nats")
+        );
+        assert!(remediation_for("Debug header exposed via X-Runtime: 12ms").is_some());
     }
 }
