@@ -435,11 +435,26 @@ fn classify_banner(port: u16, banner: &str) -> ServiceInfo {
     } else if b.contains("redis") {
         ("redis", Some(banner.to_string()), extract_version(&b), 0.85)
     } else if b.contains("mongodb") {
-        ("mongodb", Some(banner.to_string()), extract_version(&b), 0.85)
+        (
+            "mongodb",
+            Some(banner.to_string()),
+            extract_version(&b),
+            0.85,
+        )
     } else if b.contains("elasticsearch") {
-        ("elasticsearch", Some(banner.to_string()), extract_version(&b), 0.85)
+        (
+            "elasticsearch",
+            Some(banner.to_string()),
+            extract_version(&b),
+            0.85,
+        )
     } else if b.contains("memcached") {
-        ("memcached", Some(banner.to_string()), extract_version(&b), 0.85)
+        (
+            "memcached",
+            Some(banner.to_string()),
+            extract_version(&b),
+            0.85,
+        )
     } else if b.contains("kafka") {
         ("kafka", Some(banner.to_string()), None, 0.85)
     } else if b.contains("rabbitmq") || b.contains("amqp") {

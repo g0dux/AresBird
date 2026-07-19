@@ -64,7 +64,9 @@ pub async fn traceroute(
         Err(e) => {
             emit(Event::Log {
                 level: "warn".into(),
-                message: format!("path: {program} unavailable ({e}) — falling back to TCP TTL probe"),
+                message: format!(
+                    "path: {program} unavailable ({e}) — falling back to TCP TTL probe"
+                ),
             });
             return tcp_ttl_probe(target, max_hops, cancel, emit).await;
         }
@@ -88,7 +90,12 @@ pub async fn traceroute(
     let combined = format!("{text}\n{err}");
     parse_and_emit_hops(target, &combined, &emit);
 
-    if combined.lines().filter(|l| parse_hop_line(l).is_some()).count() == 0 {
+    if combined
+        .lines()
+        .filter(|l| parse_hop_line(l).is_some())
+        .count()
+        == 0
+    {
         emit(Event::Log {
             level: "info".into(),
             message: "path: no hops parsed — trying TCP TTL fallback".into(),
@@ -228,12 +235,24 @@ pub async fn ping_host(addr: IpAddr) -> Option<u64> {
     let (program, args) = if cfg!(windows) {
         (
             "ping",
-            vec!["-n".into(), "1".into(), "-w".into(), "1000".into(), addr.to_string()],
+            vec![
+                "-n".into(),
+                "1".into(),
+                "-w".into(),
+                "1000".into(),
+                addr.to_string(),
+            ],
         )
     } else {
         (
             "ping",
-            vec!["-c".into(), "1".into(), "-W".into(), "1".into(), addr.to_string()],
+            vec![
+                "-c".into(),
+                "1".into(),
+                "-W".into(),
+                "1".into(),
+                addr.to_string(),
+            ],
         )
     };
     let out = timeout(

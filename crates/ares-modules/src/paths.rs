@@ -142,18 +142,9 @@ const WEB_PATHS: &[&str] = &[
 pub fn path_severity(path: &str) -> &'static str {
     let p = path.trim_end_matches('/');
     match p {
-        "/.git/HEAD"
-        | "/.git/config"
-        | "/.svn/entries"
-        | "/.env"
-        | "/.env.local"
-        | "/.env.production"
-        | "/.env.backup"
-        | "/actuator/env"
-        | "/wp-config.php.bak"
-        | "/db.sql"
-        | "/dump.sql"
-        | "/script" => "high",
+        "/.git/HEAD" | "/.git/config" | "/.svn/entries" | "/.env" | "/.env.local"
+        | "/.env.production" | "/.env.backup" | "/actuator/env" | "/wp-config.php.bak"
+        | "/db.sql" | "/dump.sql" | "/script" => "high",
         "/server-status"
         | "/server-info"
         | "/phpinfo.php"
@@ -237,9 +228,7 @@ pub fn sensitive_path_hit(path: &str, status: &str, body: &str) -> bool {
                         && t.len() < 200
                 })
         }
-        "/actuator/health" => {
-            b.contains("\"status\"") && (b.contains("up") || b.contains("down"))
-        }
+        "/actuator/health" => b.contains("\"status\"") && (b.contains("up") || b.contains("down")),
         "/actuator/env" | "/actuator/configprops" => {
             b.contains("propertysources")
                 || b.contains("systemproperties")
@@ -270,9 +259,13 @@ pub fn sensitive_path_hit(path: &str, status: &str, body: &str) -> bool {
         "/phpinfo.php" | "/info.php" | "/test.php" => {
             b.contains("php version") || b.contains("phpinfo()") || b.contains("phpcredits")
         }
-        "/config.json" => b.contains('{') && (b.contains("api") || b.contains("password") || b.contains("secret")),
+        "/config.json" => {
+            b.contains('{') && (b.contains("api") || b.contains("password") || b.contains("secret"))
+        }
         "/web.config" => b.contains("<configuration") || b.contains("<system.web"),
-        "/wp-config.php.bak" => b.contains("db_name") || b.contains("db_password") || b.contains("<?php"),
+        "/wp-config.php.bak" => {
+            b.contains("db_name") || b.contains("db_password") || b.contains("<?php")
+        }
         "/backup.zip" | "/backup.tar.gz" | "/db.sql" | "/dump.sql" => {
             // binary / SQL cues without claiming exploitability
             body.len() > 64
@@ -281,7 +274,10 @@ pub fn sensitive_path_hit(path: &str, status: &str, body: &str) -> bool {
                     || body.as_bytes().starts_with(b"PK")
                     || body.as_bytes().starts_with(&[0x1f, 0x8b]))
         }
-        "/.DS_Store" => body.len() > 20 && (b.contains("bud1") || body.as_bytes().starts_with(b"\0\0\0\x01Bud1")),
+        "/.DS_Store" => {
+            body.len() > 20
+                && (b.contains("bud1") || body.as_bytes().starts_with(b"\0\0\0\x01Bud1"))
+        }
         "/robots.txt" => b.contains("user-agent") || b.contains("disallow"),
         "/sitemap.xml" => b.contains("<urlset") || b.contains("<sitemapindex"),
         "/security.txt" | "/.well-known/security.txt" => {
@@ -300,16 +296,12 @@ pub fn sensitive_path_hit(path: &str, status: &str, body: &str) -> bool {
                 || b.contains("jenkins")
                 || b.contains("sign in")
         }
-        "/metrics" => {
-            b.contains("# help") || b.contains("# type") || b.contains("prometheus_")
-        }
+        "/metrics" => b.contains("# help") || b.contains("# type") || b.contains("prometheus_"),
         "/-/healthy" | "/-/ready" => {
             b.contains("prometheus") || b.trim() == "ok" || b.contains("healthy")
         }
         "/api/v1/status/buildinfo" => b.contains("version") || b.contains("prometheus"),
-        "/api/health" => {
-            b.contains("database") || b.contains("version") || b.contains("\"ok\"")
-        }
+        "/api/health" => b.contains("database") || b.contains("version") || b.contains("\"ok\""),
         "/script" | "/asynchPeople" => b.contains("jenkins") || b.contains("script"),
         _ => {
             // Custom file paths: treat non-HTML 200 with content as weak signal

@@ -267,12 +267,7 @@ async fn watch_pipeline_inner(
     match join {
         Ok(Ok((collector_out, graph_out))) => {
             if !opts.ephemeral {
-                workspace::merge_and_save(
-                    &opts.workspace,
-                    &collector_out,
-                    &graph_out,
-                    false,
-                )?;
+                workspace::merge_and_save(&opts.workspace, &collector_out, &graph_out, false)?;
             }
             let renderer = Renderer::new(OutputFormat::Table, true)
                 .with_min_finding_rank(opts.min_severity_rank);
@@ -364,10 +359,7 @@ fn draw_ui(
                 continue;
             }
         }
-        let name = svc
-            .as_ref()
-            .map(|s| s.name.as_str())
-            .unwrap_or("-");
+        let name = svc.as_ref().map(|s| s.name.as_str()).unwrap_or("-");
         port_items.push(ListItem::new(format!("{addr}:{port}  {name}")));
     }
     if port_items.is_empty() {
@@ -408,7 +400,10 @@ fn draw_ui(
                 format!("{severity:<7}"),
                 Style::default().fg(color).add_modifier(Modifier::BOLD),
             ),
-            Span::raw(format!(" {addr}:{port_s}  {}", finding.chars().take(70).collect::<String>())),
+            Span::raw(format!(
+                " {addr}:{port_s}  {}",
+                finding.chars().take(70).collect::<String>()
+            )),
         ])));
     }
     if find_items.is_empty() {
@@ -425,10 +420,7 @@ fn draw_ui(
         let line = match e {
             Event::Log { level, message } => format!("[{level}] {message}"),
             Event::PortResult {
-                addr,
-                port,
-                state,
-                ..
+                addr, port, state, ..
             } => format!("port {addr}:{port} {state}"),
             Event::MisconfigFinding {
                 addr,
@@ -447,7 +439,9 @@ fn draw_ui(
                 closed,
                 filtered,
                 elapsed_ms,
-            } => format!("stats {pps}pps open={open} closed={closed} filt={filtered} {elapsed_ms}ms"),
+            } => {
+                format!("stats {pps}pps open={open} closed={closed} filt={filtered} {elapsed_ms}ms")
+            }
             _ => continue,
         };
         logs.push(ListItem::new(line));

@@ -49,7 +49,8 @@ pub struct AsnEngine {
 
 impl AsnEngine {
     pub fn system() -> anyhow::Result<Self> {
-        let resolver = TokioAsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default());
+        let resolver =
+            TokioAsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default());
         Ok(Self { resolver })
     }
 
@@ -79,7 +80,11 @@ impl AsnEngine {
                     let parts: Vec<_> = data.split('|').map(|s| s.trim()).collect();
                     if let Some(asn) = parts.first() {
                         let org = if parts.len() >= 4 {
-                            format!("{} / {}", parts.get(2).unwrap_or(&""), parts.get(3).unwrap_or(&""))
+                            format!(
+                                "{} / {}",
+                                parts.get(2).unwrap_or(&""),
+                                parts.get(3).unwrap_or(&"")
+                            )
                         } else {
                             data.clone()
                         };

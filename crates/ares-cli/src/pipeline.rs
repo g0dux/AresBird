@@ -115,7 +115,8 @@ pub fn probe_pipeline(profile: &str, targets: Vec<String>) -> anyhow::Result<Pip
                     }),
                     Some("continue"),
                 );
-                s.extra.insert("path_probes".into(), serde_json::json!(true));
+                s.extra
+                    .insert("path_probes".into(), serde_json::json!(true));
                 s.extra
                     .insert("path_profile".into(), serde_json::json!("web"));
                 s
@@ -392,10 +393,7 @@ pub async fn run_pipeline_owned_ex(
             let open_n = graph.lock().open_services().len();
             emit(Event::Log {
                 level: "info".into(),
-                message: format!(
-                    "step [{i}] {} ({} open so far)…",
-                    step.module, open_n
-                ),
+                message: format!("step [{i}] {} ({} open so far)…", step.module, open_n),
             });
         }
 
@@ -569,15 +567,22 @@ pub fn resolve_ports(spec: Option<&str>, graph: &AssetGraph) -> anyhow::Result<V
     };
     let lower = raw.to_ascii_lowercase();
     if lower == "open" {
-        let mut ports: Vec<u16> = graph.open_services().into_iter().map(|(_, p, _)| p).collect();
+        let mut ports: Vec<u16> = graph
+            .open_services()
+            .into_iter()
+            .map(|(_, p, _)| p)
+            .collect();
         ports.sort_unstable();
         ports.dedup();
         return Ok(ports);
     }
     if let Some(rest) = lower.strip_prefix("open:") {
         let filter = parse_ports(rest)?;
-        let open: std::collections::HashSet<u16> =
-            graph.open_services().into_iter().map(|(_, p, _)| p).collect();
+        let open: std::collections::HashSet<u16> = graph
+            .open_services()
+            .into_iter()
+            .map(|(_, p, _)| p)
+            .collect();
         let mut out: Vec<u16> = filter.into_iter().filter(|p| open.contains(p)).collect();
         out.sort_unstable();
         out.dedup();
@@ -622,7 +627,10 @@ fn subst(s: &str, vars: &HashMap<String, String>) -> String {
     out
 }
 
-fn subst_json_map(map: &mut serde_json::Map<String, serde_json::Value>, vars: &HashMap<String, String>) {
+fn subst_json_map(
+    map: &mut serde_json::Map<String, serde_json::Value>,
+    vars: &HashMap<String, String>,
+) {
     for v in map.values_mut() {
         subst_json_value(v, vars);
     }

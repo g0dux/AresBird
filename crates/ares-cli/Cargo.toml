@@ -42,3 +42,6 @@ tokio-util = { workspace = true }
 url = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

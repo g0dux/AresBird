@@ -45,9 +45,7 @@ pub fn findings_to_csv_min(collector: &EventCollector, min_rank: u8) -> String {
     for (addr, port, severity, finding, peers) in
         filter_findings_collapsed(collector.findings_collapsed(), min_rank)
     {
-        let port_s = port
-            .map(|p| p.to_string())
-            .unwrap_or_default();
+        let port_s = port.map(|p| p.to_string()).unwrap_or_default();
         out.push_str(&format!(
             "{},{},{},{},{}\n",
             csv_escape(&severity),
@@ -161,9 +159,7 @@ impl Renderer {
                 latency_ms,
                 method,
             } => {
-                let lat = latency_ms
-                    .map(|m| format!(" {m}ms"))
-                    .unwrap_or_default();
+                let lat = latency_ms.map(|m| format!(" {m}ms")).unwrap_or_default();
                 println!(
                     "{} {} up via {}{}",
                     paint(self.color, style("[+]").green().bold()),
@@ -193,7 +189,9 @@ impl Renderer {
                     PortState::Open => ("[open]", style("[open]").cyan().bold()),
                     PortState::Closed => ("[closed]", style("[closed]").red()),
                     PortState::Filtered => ("[filtered]", style("[filtered]").yellow()),
-                    PortState::OpenFiltered => ("[open|filtered]", style("[open|filtered]").yellow()),
+                    PortState::OpenFiltered => {
+                        ("[open|filtered]", style("[open|filtered]").yellow())
+                    }
                     _ => ("[port]", style("[port]").dim()),
                 };
                 let _ = tag;
@@ -253,9 +251,7 @@ impl Renderer {
                 rtt_ms,
                 label,
             } => {
-                let hop_addr = addr
-                    .map(|a| a.to_string())
-                    .unwrap_or_else(|| "*".into());
+                let hop_addr = addr.map(|a| a.to_string()).unwrap_or_else(|| "*".into());
                 let rtt = rtt_ms
                     .map(|m| format!("{m}ms"))
                     .unwrap_or_else(|| "*".into());
@@ -416,7 +412,10 @@ impl Renderer {
                 print!("{}", findings_to_csv_min(collector, self.min_finding_rank));
             }
             OutputFormat::Markdown => {
-                print!("{}", render_markdown(collector, graph, self.min_finding_rank));
+                print!(
+                    "{}",
+                    render_markdown(collector, graph, self.min_finding_rank)
+                );
             }
             OutputFormat::Table | OutputFormat::Plain => {
                 self.render_table(collector, graph);
@@ -428,10 +427,7 @@ impl Renderer {
         println!();
         println!(
             "{}",
-            paint(
-                self.color,
-                style("═══ AresBird Report ═══").bold()
-            )
+            paint(self.color, style("═══ AresBird Report ═══").bold())
         );
 
         let mut table = Table::new();
@@ -534,19 +530,12 @@ impl Renderer {
                     _ => Cell::new(severity.as_str()),
                 };
                 let why = crate::narrative::format_why(&crate::narrative::evidence_chain(
-                    collector,
-                    *addr,
-                    *port,
-                    finding,
-                    3,
+                    collector, *addr, *port, finding, 3,
                 ));
                 ftable.add_row(vec![
                     sev,
                     Cell::new(addr.to_string()),
-                    Cell::new(
-                        port.map(|p| p.to_string())
-                            .unwrap_or_else(|| "-".into()),
-                    ),
+                    Cell::new(port.map(|p| p.to_string()).unwrap_or_else(|| "-".into())),
                     Cell::new(peers.to_string()),
                     Cell::new(finding.chars().take(80).collect::<String>()),
                     Cell::new(why.chars().take(72).collect::<String>()),
@@ -622,10 +611,7 @@ impl Renderer {
             for (target, hops) in &graph.paths {
                 println!("  → {target}");
                 for h in hops {
-                    let a = h
-                        .addr
-                        .map(|x| x.to_string())
-                        .unwrap_or_else(|| "*".into());
+                    let a = h.addr.map(|x| x.to_string()).unwrap_or_else(|| "*".into());
                     let rtt = h
                         .rtt_ms
                         .map(|m| format!("{m}ms"))
@@ -660,11 +646,8 @@ impl Renderer {
             graph.finding_count().max(findings.len())
         );
 
-        let handoffs = crate::narrative::suggest_talk_handoffs(
-            collector,
-            graph,
-            self.min_finding_rank,
-        );
+        let handoffs =
+            crate::narrative::suggest_talk_handoffs(collector, graph, self.min_finding_rank);
         if !handoffs.is_empty() {
             println!();
             println!("{}", paint(self.color, style("NEXT").bold()));
@@ -694,11 +677,7 @@ pub fn render_markdown(
             if p.state != PortState::Open {
                 continue;
             }
-            let svc = p
-                .service
-                .as_ref()
-                .map(|s| s.name.as_str())
-                .unwrap_or("");
+            let svc = p.service.as_ref().map(|s| s.name.as_str()).unwrap_or("");
             let banner = p
                 .banner
                 .as_deref()
@@ -736,11 +715,7 @@ pub fn render_markdown(
             let port_s = port.map(|p| p.to_string()).unwrap_or_else(|| "-".into());
             let finding_esc = finding.replace('|', "\\|");
             let why = crate::narrative::format_why(&crate::narrative::evidence_chain(
-                collector,
-                *addr,
-                *port,
-                finding,
-                3,
+                collector, *addr, *port, finding, 3,
             ))
             .replace('|', "\\|");
             out.push_str(&format!(
@@ -755,17 +730,14 @@ pub fn render_markdown(
                 continue;
             }
             let port_s = port.map(|p| p.to_string()).unwrap_or_else(|| "-".into());
-            out.push_str(&format!(
-                "- **{severity}** `{addr}:{port_s}` — {finding}\n"
-            ));
+            out.push_str(&format!("- **{severity}** `{addr}:{port_s}` — {finding}\n"));
             for step in chain {
                 out.push_str(&format!("  - `{}`: {}\n", step.kind, step.detail));
             }
         }
     }
 
-    let handoffs =
-        crate::narrative::suggest_talk_handoffs(collector, graph, min_finding_rank);
+    let handoffs = crate::narrative::suggest_talk_handoffs(collector, graph, min_finding_rank);
     if !handoffs.is_empty() {
         out.push_str("\n## Next (talk handoff)\n\n");
         for h in handoffs {
@@ -808,10 +780,7 @@ pub fn render_markdown(
         for (target, hops) in &graph.paths {
             out.push_str(&format!("### `{target}`\n\n"));
             for h in hops {
-                let a = h
-                    .addr
-                    .map(|x| x.to_string())
-                    .unwrap_or_else(|| "*".into());
+                let a = h.addr.map(|x| x.to_string()).unwrap_or_else(|| "*".into());
                 let rtt = h
                     .rtt_ms
                     .map(|m| format!("{m}ms"))

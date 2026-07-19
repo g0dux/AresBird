@@ -44,10 +44,7 @@ impl Module for ActiveMisconfigModule {
                 let g = ctx.graph.lock();
                 let mut grouped: HashMap<(String, u16), Vec<IpAddr>> = HashMap::new();
                 for (a, p, _) in g.open_services() {
-                    grouped
-                        .entry((a.to_string(), p))
-                        .or_default()
-                        .push(a);
+                    grouped.entry((a.to_string(), p)).or_default().push(a);
                 }
                 if grouped.is_empty() {
                     let ports = if ctx.ports.is_empty() {
@@ -68,10 +65,7 @@ impl Module for ActiveMisconfigModule {
                         let resolved = ares_net::resolve_targets(std::slice::from_ref(target))?;
                         for t in resolved {
                             for p in &ports {
-                                grouped
-                                    .entry((host.clone(), *p))
-                                    .or_default()
-                                    .push(t.addr);
+                                grouped.entry((host.clone(), *p)).or_default().push(t.addr);
                             }
                         }
                     }
@@ -172,26 +166,26 @@ impl Module for ActiveMisconfigModule {
                                 });
                                 done = true;
                             } else {
-                            let emit_http = ctx.emit.clone();
-                            if let Ok(resp) = engine
-                                .get(*addr, port, &host, "/", move |e| emit_http(e))
-                                .await
-                            {
-                                assess_http_surface(
-                                    *addr,
-                                    port,
-                                    false,
-                                    &host,
-                                    &resp,
-                                    &path_engine,
-                                    do_paths,
-                                    &path_list,
-                                    path_gap,
-                                    &ctx,
-                                )
-                                .await;
-                                done = true;
-                            }
+                                let emit_http = ctx.emit.clone();
+                                if let Ok(resp) = engine
+                                    .get(*addr, port, &host, "/", move |e| emit_http(e))
+                                    .await
+                                {
+                                    assess_http_surface(
+                                        *addr,
+                                        port,
+                                        false,
+                                        &host,
+                                        &resp,
+                                        &path_engine,
+                                        do_paths,
+                                        &path_list,
+                                        path_gap,
+                                        &ctx,
+                                    )
+                                    .await;
+                                    done = true;
+                                }
                             }
                         }
                     }
@@ -289,17 +283,14 @@ impl Module for ActiveMisconfigModule {
                                     ctx.emit(Event::MisconfigFinding {
                                         addr: *addr,
                                         port: Some(port),
-                                        finding: format!(
-                                            "Redis responds without AUTH ({detail})"
-                                        ),
+                                        finding: format!("Redis responds without AUTH ({detail})"),
                                         severity: "high".into(),
                                     });
                                 } else if detail.contains("NOAUTH") {
                                     ctx.emit(Event::MisconfigFinding {
                                         addr: *addr,
                                         port: Some(port),
-                                        finding: "Redis requires AUTH (exposed to network)"
-                                            .into(),
+                                        finding: "Redis requires AUTH (exposed to network)".into(),
                                         severity: "medium".into(),
                                     });
                                 }
@@ -341,9 +332,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "Memcached responds without auth ({detail})"
-                                    ),
+                                    finding: format!("Memcached responds without auth ({detail})"),
                                     severity: "high".into(),
                                 });
                                 break;
@@ -535,9 +524,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "Kerberos KDC reachable ({detail})"
-                                    ),
+                                    finding: format!("Kerberos KDC reachable ({detail})"),
                                     severity: "info".into(),
                                 });
                                 break;
@@ -554,17 +541,11 @@ impl Module for ActiveMisconfigModule {
                                 ares_proto::observe_vnc(*addr, port, move |e| emit(e)).await
                             {
                                 let d = detail.to_ascii_lowercase();
-                                let sev = if d.contains("none") {
-                                    "high"
-                                } else {
-                                    "medium"
-                                };
+                                let sev = if d.contains("none") { "high" } else { "medium" };
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "VNC/RFB service exposed ({detail})"
-                                    ),
+                                    finding: format!("VNC/RFB service exposed ({detail})"),
                                     severity: sev.into(),
                                 });
                                 break;
@@ -674,9 +655,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "MSSQL/TDS service exposed ({detail})"
-                                    ),
+                                    finding: format!("MSSQL/TDS service exposed ({detail})"),
                                     severity: sev.into(),
                                 });
                                 break;
@@ -694,13 +673,9 @@ impl Module for ActiveMisconfigModule {
                                 Some(host.as_str())
                             };
                             let emit = ctx.emit.clone();
-                            if let Ok(Some(detail)) = ares_proto::observe_kubernetes(
-                                *addr,
-                                port,
-                                sni,
-                                move |e| emit(e),
-                            )
-                            .await
+                            if let Ok(Some(detail)) =
+                                ares_proto::observe_kubernetes(*addr, port, sni, move |e| emit(e))
+                                    .await
                             {
                                 let sev = if detail.contains("auth required") {
                                     "medium"
@@ -710,9 +685,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "Kubernetes API reachable ({detail})"
-                                    ),
+                                    finding: format!("Kubernetes API reachable ({detail})"),
                                     severity: sev.into(),
                                 });
                                 break;
@@ -731,9 +704,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "Oracle TNS listener exposed ({detail})"
-                                    ),
+                                    finding: format!("Oracle TNS listener exposed ({detail})"),
                                     severity: "medium".into(),
                                 });
                                 break;
@@ -773,9 +744,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "ZooKeeper four-letter cmds open ({detail})"
-                                    ),
+                                    finding: format!("ZooKeeper four-letter cmds open ({detail})"),
                                     severity: "high".into(),
                                 });
                                 break;
@@ -839,9 +808,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "Neo4j HTTP API reachable ({detail})"
-                                    ),
+                                    finding: format!("Neo4j HTTP API reachable ({detail})"),
                                     severity: "high".into(),
                                 });
                                 break;
@@ -865,9 +832,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "ClickHouse HTTP exposed ({detail})"
-                                    ),
+                                    finding: format!("ClickHouse HTTP exposed ({detail})"),
                                     severity: sev.into(),
                                 });
                                 break;
@@ -886,9 +851,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "MinIO/S3 API reachable ({detail})"
-                                    ),
+                                    finding: format!("MinIO/S3 API reachable ({detail})"),
                                     severity: "medium".into(),
                                 });
                                 break;
@@ -907,9 +870,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "Neo4j Bolt exposed ({detail})"
-                                    ),
+                                    finding: format!("Neo4j Bolt exposed ({detail})"),
                                     severity: "medium".into(),
                                 });
                                 break;
@@ -936,9 +897,7 @@ impl Module for ActiveMisconfigModule {
                                 ctx.emit(Event::MisconfigFinding {
                                     addr: *addr,
                                     port: Some(port),
-                                    finding: format!(
-                                        "RabbitMQ Management exposed ({detail})"
-                                    ),
+                                    finding: format!("RabbitMQ Management exposed ({detail})"),
                                     severity: sev.into(),
                                 });
                                 break;
@@ -963,27 +922,27 @@ impl Module for ActiveMisconfigModule {
                                 });
                                 done = true;
                             } else {
-                            // Not Grafana — still assess as generic HTTP.
-                            let emit_http = ctx.emit.clone();
-                            if let Ok(resp) = engine
-                                .get(*addr, port, &host, "/", move |e| emit_http(e))
-                                .await
-                            {
-                                assess_http_surface(
-                                    *addr,
-                                    port,
-                                    false,
-                                    &host,
-                                    &resp,
-                                    &path_engine,
-                                    do_paths,
-                                    &path_list,
-                                    path_gap,
-                                    &ctx,
-                                )
-                                .await;
-                                done = true;
-                            }
+                                // Not Grafana — still assess as generic HTTP.
+                                let emit_http = ctx.emit.clone();
+                                if let Ok(resp) = engine
+                                    .get(*addr, port, &host, "/", move |e| emit_http(e))
+                                    .await
+                                {
+                                    assess_http_surface(
+                                        *addr,
+                                        port,
+                                        false,
+                                        &host,
+                                        &resp,
+                                        &path_engine,
+                                        do_paths,
+                                        &path_list,
+                                        path_gap,
+                                        &ctx,
+                                    )
+                                    .await;
+                                    done = true;
+                                }
                             }
                         }
                     }

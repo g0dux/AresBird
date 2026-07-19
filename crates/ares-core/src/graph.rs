@@ -5,9 +5,7 @@ use std::net::IpAddr;
 use uuid::Uuid;
 
 use crate::event::Event;
-use crate::model::{
-    Host, HostFinding, PathHopRecord, Port, PortState, ServiceInfo, Session,
-};
+use crate::model::{Host, HostFinding, PathHopRecord, Port, PortState, ServiceInfo, Session};
 
 /// Living asset/session graph — the source of truth for the fabric.
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -88,11 +86,7 @@ impl AssetGraph {
                     },
                 );
             }
-            Event::Banner {
-                addr,
-                port,
-                banner,
-            } => {
+            Event::Banner { addr, port, banner } => {
                 let host = self.hosts.entry(*addr).or_insert_with(|| Host::new(*addr));
                 host.up = true;
                 let p = host.ports.entry(*port).or_insert_with(|| Port {
@@ -127,7 +121,10 @@ impl AssetGraph {
                 record_type,
                 value,
             } => {
-                self.dns.entry(name.clone()).or_default().push(value.clone());
+                self.dns
+                    .entry(name.clone())
+                    .or_default()
+                    .push(value.clone());
                 if record_type.eq_ignore_ascii_case("PTR") {
                     if let Some(addr) = parse_inaddr_arpa(name) {
                         let host = self.hosts.entry(addr).or_insert_with(|| Host::new(addr));
@@ -271,10 +268,7 @@ impl AssetGraph {
                         None => *ttl,
                     });
                 }
-                let better = host
-                    .os_confidence
-                    .map(|c| *confidence > c)
-                    .unwrap_or(true);
+                let better = host.os_confidence.map(|c| *confidence > c).unwrap_or(true);
                 if better {
                     host.os_guess = Some(os.clone());
                     host.os_confidence = Some(*confidence);
@@ -465,13 +459,14 @@ impl AssetGraph {
         let mut nodes: HashMap<String, GraphNode> = HashMap::new();
         let mut edges = Vec::new();
 
-        let push_node = |nodes: &mut HashMap<String, GraphNode>, id: String, kind: &str, label: String| {
-            nodes.entry(id.clone()).or_insert(GraphNode {
-                id,
-                kind: kind.into(),
-                label,
-            });
-        };
+        let push_node =
+            |nodes: &mut HashMap<String, GraphNode>, id: String, kind: &str, label: String| {
+                nodes.entry(id.clone()).or_insert(GraphNode {
+                    id,
+                    kind: kind.into(),
+                    label,
+                });
+            };
 
         for (addr, host) in &self.hosts {
             let id = host_node_id(*addr);
@@ -490,12 +485,7 @@ impl AssetGraph {
                     .as_ref()
                     .map(|s| s.name.as_str())
                     .unwrap_or("open");
-                push_node(
-                    &mut nodes,
-                    pid.clone(),
-                    "port",
-                    format!("{port}/{svc}"),
-                );
+                push_node(&mut nodes, pid.clone(), "port", format!("{port}/{svc}"));
                 edges.push(GraphEdge {
                     from: id.clone(),
                     to: pid,
@@ -558,12 +548,7 @@ impl AssetGraph {
 
         for (target, hops) in &self.paths {
             let tid = host_node_id(*target);
-            push_node(
-                &mut nodes,
-                tid.clone(),
-                "host",
-                target.to_string(),
-            );
+            push_node(&mut nodes, tid.clone(), "host", target.to_string());
             let mut prev = None::<String>;
             for h in hops {
                 let cur = match h.addr {
@@ -574,12 +559,7 @@ impl AssetGraph {
                     }
                     None => {
                         let id = format!("hop_{}_{}", sanitize_id(&target.to_string()), h.hop);
-                        push_node(
-                            &mut nodes,
-                            id.clone(),
-                            "hop",
-                            format!("* ({})", h.label),
-                        );
+                        push_node(&mut nodes, id.clone(), "hop", format!("* ({})", h.label));
                         id
                     }
                 };
@@ -654,8 +634,9 @@ fn merge_port(dst: &mut Port, src: &Port) {
     if dst.rtt_ms.is_none() {
         dst.rtt_ms = src.rtt_ms;
     }
-    if dst.banner.is_none() || src.banner.as_ref().map(|b| b.len()).unwrap_or(0)
-        > dst.banner.as_ref().map(|b| b.len()).unwrap_or(0)
+    if dst.banner.is_none()
+        || src.banner.as_ref().map(|b| b.len()).unwrap_or(0)
+            > dst.banner.as_ref().map(|b| b.len()).unwrap_or(0)
     {
         if src.banner.is_some() {
             dst.banner = src.banner.clone();
@@ -682,13 +663,7 @@ fn dns_node_id(name: &str) -> String {
 
 fn sanitize_id(s: &str) -> String {
     s.chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() {
-                c
-            } else {
-                '_'
-            }
-        })
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
         .collect()
 }
 

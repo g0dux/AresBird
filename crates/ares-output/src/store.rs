@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
+use anyhow::Context;
 use ares_core::event::{Event, EventCollector};
 use ares_core::graph::AssetGraph;
-use anyhow::Context;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -176,9 +176,8 @@ impl RunStore {
         let mut stmt = self
             .conn
             .prepare("SELECT events_json, graph_json FROM runs WHERE id = ?1")?;
-        let (events_json, graph_json): (String, String) = stmt.query_row([id.to_string()], |row| {
-            Ok((row.get(0)?, row.get(1)?))
-        })?;
+        let (events_json, graph_json): (String, String) =
+            stmt.query_row([id.to_string()], |row| Ok((row.get(0)?, row.get(1)?)))?;
         let events: Vec<Event> = serde_json::from_str(&events_json)?;
         let graph: AssetGraph = serde_json::from_str(&graph_json)?;
         let mut collector = EventCollector::new();
@@ -201,9 +200,9 @@ impl RunStore {
 
     #[cfg(feature = "sqlite")]
     pub fn latest_named(&self, name: &str) -> anyhow::Result<Option<Uuid>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id FROM runs WHERE name = ?1 ORDER BY created_at DESC LIMIT 1",
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM runs WHERE name = ?1 ORDER BY created_at DESC LIMIT 1")?;
         let mut rows = stmt.query_map([name], |row| {
             let id: String = row.get(0)?;
             Ok(id)

@@ -47,8 +47,7 @@ impl CookieJar {
             if let Some((name, value)) = nv.split_once('=') {
                 let name = name.trim();
                 if !name.is_empty() {
-                    self.map
-                        .insert(name.to_string(), value.trim().to_string());
+                    self.map.insert(name.to_string(), value.trim().to_string());
                 }
             }
         }
@@ -325,11 +324,7 @@ impl HttpEngine {
                 addr,
                 port,
                 probe: "http-session-cookies".into(),
-                detail: format!(
-                    "{} cookie(s): {}",
-                    jar.len(),
-                    jar.names().join(", ")
-                ),
+                detail: format!("{} cookie(s): {}", jar.len(), jar.names().join(", ")),
                 confidence: 0.9,
             });
         }
@@ -385,8 +380,8 @@ impl HttpEngine {
             let raw = self.single_exchange(&hop, jar, emit).await?;
             let code = status_code(&raw.status_line);
 
-            let should_follow = matches!(code, Some(301 | 302 | 303 | 307 | 308))
-                && hops_done < self.max_redirects;
+            let should_follow =
+                matches!(code, Some(301 | 302 | 303 | 307 | 308)) && hops_done < self.max_redirects;
 
             if should_follow {
                 if let Some(loc) = header_value(&raw.headers, "location") {
@@ -398,11 +393,7 @@ impl HttpEngine {
                                 addr: hop.addr,
                                 port: hop.port,
                                 probe: "http-redirect".into(),
-                                detail: format!(
-                                    "{} {from} → {}",
-                                    code.unwrap_or(0),
-                                    next.url()
-                                ),
+                                detail: format!("{} {from} → {}", code.unwrap_or(0), next.url()),
                                 confidence: 0.95,
                             });
                             if let Some((_, server)) = raw
@@ -508,14 +499,7 @@ impl HttpEngine {
         emit: &impl Fn(Event),
     ) -> anyhow::Result<RawHttp> {
         self.exchange_io(
-            hop.addr,
-            hop.port,
-            &hop.host,
-            &hop.path,
-            "http",
-            stream,
-            cookie,
-            emit,
+            hop.addr, hop.port, &hop.host, &hop.path, "http", stream, cookie, emit,
         )
         .await
     }
@@ -545,8 +529,7 @@ impl HttpEngine {
 
         let connector = TlsConnector::from(Arc::new(cfg));
         let name = if let Some(host) = sni_host.as_deref() {
-            ServerName::try_from(host.to_string())
-                .map_err(|e| anyhow::anyhow!("bad SNI: {e}"))?
+            ServerName::try_from(host.to_string()).map_err(|e| anyhow::anyhow!("bad SNI: {e}"))?
         } else {
             ServerName::IpAddress(hop.addr.into())
         };
@@ -563,14 +546,7 @@ impl HttpEngine {
             });
         }
         self.exchange_io(
-            hop.addr,
-            hop.port,
-            &hop.host,
-            &hop.path,
-            "https",
-            tls,
-            cookie,
-            emit,
+            hop.addr, hop.port, &hop.host, &hop.path, "https", tls, cookie, emit,
         )
         .await
     }
@@ -714,7 +690,10 @@ fn emit_http_observations(
     title: &Option<String>,
     emit: &impl Fn(Event),
 ) {
-    if let Some((_, server)) = headers.iter().find(|(k, _)| k.eq_ignore_ascii_case("server")) {
+    if let Some((_, server)) = headers
+        .iter()
+        .find(|(k, _)| k.eq_ignore_ascii_case("server"))
+    {
         emit(Event::Banner {
             addr,
             port,
@@ -751,9 +730,7 @@ fn emit_http_observations(
             "x-content-type-options",
             "x-frame-options",
         ] {
-            let present = headers
-                .iter()
-                .any(|(k, _)| k.eq_ignore_ascii_case(missing));
+            let present = headers.iter().any(|(k, _)| k.eq_ignore_ascii_case(missing));
             if !present {
                 emit(Event::ProbeResult {
                     addr,
@@ -896,10 +873,7 @@ pub fn assess_security_headers(headers: &[(String, String)], https: bool) -> Vec
         }
     }
 
-    if let Some((_, hsts)) = lower
-        .iter()
-        .find(|(k, _)| k == "strict-transport-security")
-    {
+    if let Some((_, hsts)) = lower.iter().find(|(k, _)| k == "strict-transport-security") {
         if https && !hsts.to_lowercase().contains("max-age=") {
             out.push(SecHeaderFinding {
                 message: "HSTS present but missing max-age".into(),
@@ -907,10 +881,7 @@ pub fn assess_security_headers(headers: &[(String, String)], https: bool) -> Vec
             });
         }
     }
-    if let Some((_, xcto)) = lower
-        .iter()
-        .find(|(k, _)| k == "x-content-type-options")
-    {
+    if let Some((_, xcto)) = lower.iter().find(|(k, _)| k == "x-content-type-options") {
         if !xcto.eq_ignore_ascii_case("nosniff") {
             out.push(SecHeaderFinding {
                 message: format!("Weak X-Content-Type-Options: {xcto}"),

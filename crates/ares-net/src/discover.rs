@@ -94,8 +94,9 @@ pub async fn host_discover_opts(
         {
             emit(Event::Log {
                 level: "warn".into(),
-                message: "discover --arp needs Linux build with ares-net --features raw; using icmp/tcp"
-                    .into(),
+                message:
+                    "discover --arp needs Linux build with ares-net --features raw; using icmp/tcp"
+                        .into(),
             });
         }
     }
@@ -126,8 +127,8 @@ async fn host_discover_tcp_icmp(
     cancel: CancellationToken,
     emit: impl Fn(Event) + Send + Sync + 'static,
 ) -> Vec<IpAddr> {
-    use ares_core::timing::shuffle_inplace;
     use crate::rate::optional_limiter;
+    use ares_core::timing::shuffle_inplace;
 
     let ports: Vec<u16> = if probe_ports.is_empty() {
         vec![80, 443, 22, 135, 445, 3389, 8080]

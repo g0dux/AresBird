@@ -36,13 +36,11 @@ pub unsafe extern "C" fn ares_plugin_run(req_json: *const c_char) -> *mut c_char
     let targets = serde_json::from_str::<serde_json::Value>(req)
         .ok()
         .and_then(|v| {
-            v.get("targets")
-                .and_then(|t| t.as_array())
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|x| x.as_str().map(|s| s.to_string()))
-                        .collect::<Vec<_>>()
-                })
+            v.get("targets").and_then(|t| t.as_array()).map(|arr| {
+                arr.iter()
+                    .filter_map(|x| x.as_str().map(|s| s.to_string()))
+                    .collect::<Vec<_>>()
+            })
         })
         .unwrap_or_default();
 

@@ -70,7 +70,9 @@ pub async fn scan_with_engine(
                 message: "syn-compat: short-timeout high-concurrency connect (raw SYN needs Linux+raw feature)".into(),
             });
             let mut syn_timing = timing;
-            syn_timing.timeout = syn_timing.timeout.min(std::time::Duration::from_millis(250));
+            syn_timing.timeout = syn_timing
+                .timeout
+                .min(std::time::Duration::from_millis(250));
             syn_timing.concurrency = syn_timing.concurrency.max(1000);
             syn_timing.retries = 0;
             let mut cfg = ScanConfig::from_timing(syn_timing);
@@ -100,8 +102,9 @@ pub async fn scan_with_engine(
                             message: format!("syn-raw failed ({e}) — falling back to syn-compat"),
                         });
                         let mut syn_timing = timing;
-                        syn_timing.timeout =
-                            syn_timing.timeout.min(std::time::Duration::from_millis(250));
+                        syn_timing.timeout = syn_timing
+                            .timeout
+                            .min(std::time::Duration::from_millis(250));
                         syn_timing.concurrency = syn_timing.concurrency.max(1000);
                         let mut cfg = ScanConfig::from_timing(syn_timing);
                         cfg.show_closed = show_closed;

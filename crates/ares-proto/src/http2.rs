@@ -143,8 +143,7 @@ pub async fn observe_h2_alpn(
 
     let connector = TlsConnector::from(Arc::new(cfg));
     let name = if let Some(host) = server_name {
-        ServerName::try_from(host.to_string())
-            .map_err(|e| anyhow::anyhow!("bad SNI: {e}"))?
+        ServerName::try_from(host.to_string()).map_err(|e| anyhow::anyhow!("bad SNI: {e}"))?
     } else {
         ServerName::IpAddress(addr.into())
     };

@@ -55,9 +55,7 @@ impl Module for DiscoverModule {
                 ctx.cancel.clone(),
                 move |e| {
                     if let Event::HostUp {
-                        addr,
-                        latency_ms,
-                        ..
+                        addr, latency_ms, ..
                     } = &e
                     {
                         let emit_os = emit.clone();

@@ -132,8 +132,7 @@ pub fn suggest_talk_handoffs(
     graph: &AssetGraph,
     min_severity_rank: u8,
 ) -> Vec<TalkHandoff> {
-    let findings =
-        filter_findings_collapsed(collector.findings_collapsed(), min_severity_rank);
+    let findings = filter_findings_collapsed(collector.findings_collapsed(), min_severity_rank);
     let mut out = Vec::new();
     let mut seen = std::collections::HashSet::new();
 
@@ -193,7 +192,11 @@ fn handoff_for(host: &str, port: u16, finding_l: &str, svc: Option<&str>) -> Opt
                 "http"
             };
             let p = if port == 0 {
-                if scheme == "https" { 443 } else { 80 }
+                if scheme == "https" {
+                    443
+                } else {
+                    80
+                }
             } else {
                 port
             };
@@ -264,8 +267,12 @@ fn infer_proto(port: u16, finding_l: &str, svc: Option<&str>) -> Option<String> 
     if blob.contains("postgres") || port == 5432 {
         return Some("postgres".into());
     }
-    if matches!(port, 80 | 8080 | 8000 | 8888) || blob.contains("http") || blob.contains("header")
-        || blob.contains("cors") || blob.contains("cookie") || blob.contains("path ")
+    if matches!(port, 80 | 8080 | 8000 | 8888)
+        || blob.contains("http")
+        || blob.contains("header")
+        || blob.contains("cors")
+        || blob.contains("cookie")
+        || blob.contains("path ")
     {
         return Some("http".into());
     }
@@ -312,13 +319,7 @@ mod tests {
             finding: "Missing Strict-Transport-Security".into(),
             severity: "medium".into(),
         });
-        let chain = evidence_chain(
-            &c,
-            addr,
-            Some(80),
-            "Missing Strict-Transport-Security",
-            4,
-        );
+        let chain = evidence_chain(&c, addr, Some(80), "Missing Strict-Transport-Security", 4);
         assert!(chain.iter().any(|s| s.kind == "port"));
         assert!(chain.iter().any(|s| s.kind == "probe"));
     }

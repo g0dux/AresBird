@@ -81,7 +81,10 @@ fn version_label(v: ProtocolVersion) -> &'static str {
     }
 }
 
-fn build_config(versions: &[&'static rustls::SupportedProtocolVersion], alpn: bool) -> ClientConfig {
+fn build_config(
+    versions: &[&'static rustls::SupportedProtocolVersion],
+    alpn: bool,
+) -> ClientConfig {
     let mut cfg = ClientConfig::builder_with_protocol_versions(versions)
         .dangerous()
         .with_custom_certificate_verifier(Arc::new(NoVerify))

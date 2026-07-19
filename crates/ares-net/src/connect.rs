@@ -217,11 +217,7 @@ fn done_trace(addr: std::net::IpAddr, port: u16, result: &PortScanResult) {
     debug!(%addr, port, state = %result.state, "port result");
 }
 
-async fn scan_connect(
-    addr: std::net::IpAddr,
-    port: u16,
-    timeout_dur: Duration,
-) -> PortScanResult {
+async fn scan_connect(addr: std::net::IpAddr, port: u16, timeout_dur: Duration) -> PortScanResult {
     let sockaddr = std::net::SocketAddr::new(addr, port);
     let start = Instant::now();
     match timeout(timeout_dur, TcpStream::connect(sockaddr)).await {

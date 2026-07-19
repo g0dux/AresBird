@@ -39,6 +39,17 @@ ares test example.com -p web --no-path-probes --save \
 
 ## GitHub Actions
 
+### PR / push CI (`.github/workflows/ci.yml`)
+
+Runs on `master`/`main` push and PRs:
+
+- `cargo fmt --check`
+- `cargo clippy --workspace`
+- `cargo test --workspace`
+- release build + CLI smoke (`version` / `doctor` / `scan` / `probe`)
+
+### Misconfig gate (`.github/workflows/ares-misconfig.yml`)
+
 Workflow: [`.github/workflows/ares-misconfig.yml`](../.github/workflows/ares-misconfig.yml)
 
 - Manual `workflow_dispatch` with `target` / `ports` / `min_severity`

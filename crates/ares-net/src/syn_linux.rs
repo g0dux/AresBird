@@ -64,7 +64,10 @@ pub async fn syn_scan_emit(
         v.dedup();
         v
     };
-    let arp_timeout = timing.timeout.min(Duration::from_secs(2)).max(Duration::from_millis(400));
+    let arp_timeout = timing
+        .timeout
+        .min(Duration::from_secs(2))
+        .max(Duration::from_millis(400));
     let dst_macs = arp::resolve_next_hop_macs(
         &mut *tx_shared.lock(),
         &mut rx,
@@ -83,9 +86,7 @@ pub async fn syn_scan_emit(
     let pending: Arc<Mutex<HashMap<u16, Pending>>> = Arc::new(Mutex::new(HashMap::new()));
     let results: Arc<Mutex<Vec<(IpAddr, u16, PortState, u8)>>> = Arc::new(Mutex::new(Vec::new()));
 
-    let listen_window = timing
-        .timeout
-        .max(Duration::from_millis(500))
+    let listen_window = timing.timeout.max(Duration::from_millis(500))
         + Duration::from_millis((targets.len() as u64 / 100).saturating_mul(10));
 
     let pending_r = pending.clone();
@@ -127,7 +128,8 @@ pub async fn syn_scan_emit(
                                 continue;
                             }
                             let flags = tcp.get_flags();
-                            let state = if flags & TcpFlags::SYN != 0 && flags & TcpFlags::ACK != 0 {
+                            let state = if flags & TcpFlags::SYN != 0 && flags & TcpFlags::ACK != 0
+                            {
                                 open_r.fetch_add(1, Ordering::Relaxed);
                                 // Tear down half-open: RST|ACK toward the listener.
                                 let dst_mac = dst_macs_r
@@ -207,16 +209,7 @@ pub async fn syn_scan_emit(
                 dst_ip,
             },
         );
-        craft_syn(
-            &mut buf,
-            src_mac,
-            dst_mac,
-            src_ip,
-            dst_ip,
-            sport,
-            port,
-            seq,
-        );
+        craft_syn(&mut buf, src_mac, dst_mac, src_ip, dst_ip, sport, port, seq);
         let _ = tx_shared.lock().send_to(&buf, None);
         sent += 1;
         if let Some(pps) = timing.rate_pps {

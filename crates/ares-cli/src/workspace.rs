@@ -37,3 +37,27 @@ pub fn merge_and_save(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_prefers_cli() {
+        assert_eq!(resolve_workspace_id(Some("lab")), "lab");
+        assert_eq!(resolve_workspace_id(Some("  lab  ")), "lab");
+    }
+
+    #[test]
+    fn resolve_falls_back_default() {
+        // Clear env for this test process slot — may race if parallel tests set ARES_WORKSPACE.
+        let prev = std::env::var_os("ARES_WORKSPACE");
+        std::env::remove_var("ARES_WORKSPACE");
+        assert_eq!(resolve_workspace_id(None), "default");
+        assert_eq!(resolve_workspace_id(Some("")), "default");
+        match prev {
+            Some(v) => std::env::set_var("ARES_WORKSPACE", v),
+            None => std::env::remove_var("ARES_WORKSPACE"),
+        }
+    }
+}

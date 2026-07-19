@@ -16,6 +16,4 @@ pub use job::{Job, JobId, JobStatus};
 pub use model::*;
 pub use orchestrator::Orchestrator;
 pub use ports::{parse_ports, port_preset_names, PortSpec, APPS, INFRA, TOP100, WEB};
-pub use timing::{
-    jitter_delay_ms, shuffle_inplace, AdaptiveController, ScanMode, TimingProfile,
-};
+pub use timing::{jitter_delay_ms, shuffle_inplace, AdaptiveController, ScanMode, TimingProfile};

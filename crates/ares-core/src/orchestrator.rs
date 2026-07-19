@@ -19,7 +19,10 @@ pub struct Orchestrator {
 }
 
 impl Orchestrator {
-    pub fn new(name: impl Into<String>, mode: ScanMode) -> (Self, tokio::sync::mpsc::UnboundedReceiver<Event>) {
+    pub fn new(
+        name: impl Into<String>,
+        mode: ScanMode,
+    ) -> (Self, tokio::sync::mpsc::UnboundedReceiver<Event>) {
         let (bus, rx) = EventBus::new();
         let job = Job::new(name, mode);
         (

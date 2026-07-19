@@ -6,11 +6,23 @@ High-performance **network interaction engine** (Swiss-army knife) written in Ru
 
 **Optional NSE-style packs:** `ares scan … --script-pack default` runs observe-only builtins + pack scripts after open ports (off by default). See `ares scripts list`.
 
-## Install (Windows)
+## Install
 
-Build lands under `%LOCALAPPDATA%\aresbird-target` (avoids Smart App Control on Desktop):
+### From source (any OS)
+
+```bash
+git clone https://github.com/g0dux/AresBird.git
+cd AresBird
+cargo install --path crates/ares-cli
+ares doctor
+```
+
+### Windows (Smart App Control)
+
+Prefer a target dir outside Desktop:
 
 ```powershell
+$env:CARGO_TARGET_DIR = "$env:LOCALAPPDATA\aresbird-target"
 cargo build -p ares-cli --release
 # if SAC blocks release build scripts (os error 4551):
 cargo build -p ares-cli --profile dist
@@ -19,11 +31,18 @@ cargo build -p ares-cli --profile dist
 ares doctor
 ```
 
+### GitHub Releases
+
+Tagged builds (`v*`) publish Linux / Windows / macOS archives via `.github/workflows/release.yml`.
+
+Download from: https://github.com/g0dux/AresBird/releases
+
 ## Quick start
 
 ```bash
 ares scan 127.0.0.1 -p top100 --mode fast --service
 ares scan 127.0.0.1 -p apps --script-pack default
+ares scan 127.0.0.1 -p web --script-pack web
 ares scripts list
 ares scripts info redis-info
 ares probe quick 127.0.0.1
@@ -35,6 +54,8 @@ ares report graph --workspace
 ares talk https://example.com/ --repl
 ares talk 127.0.0.1:6379 --proto redis --repl
 ares talk 127.0.0.1 --proto ssh --repl
+# ssh --repl = observe-only (banner|algs|probe); not an interactive shell
+# guides: docs/guides/ (workspace, watch, packs, talk-repl)
 ares scan 127.0.0.1 -p top100 --discover
 ares scan 127.0.0.1 -p 80,443 --show-closed --show-filtered
 ares scan 127.0.0.1 -p apps --service
@@ -157,6 +178,8 @@ Exit **2** = new findings ≥ `--min-severity` vs last saved run. Store: `ARES_D
 Manage runs: `ares report list|show|delete|prune`. See [docs/ci.md](docs/ci.md) and `.github/workflows/ares-misconfig.yml`.
 
 ## Architecture
+
+Guides: [docs/guides/](docs/guides/) · Architecture: [docs/architecture.md](docs/architecture.md)
 
 Cargo workspace under `crates/`:
 

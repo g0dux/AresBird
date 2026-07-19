@@ -10,6 +10,10 @@ param(
 )
 
 $root = Join-Path $env:LOCALAPPDATA "aresbird-target"
+# Keep future cargo builds off Desktop (SAC-friendly)
+if (-not $env:CARGO_TARGET_DIR) {
+    $env:CARGO_TARGET_DIR = $root
+}
 $candidates = @(
     (Join-Path $root "release"),
     (Join-Path $root "dist"),

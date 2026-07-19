@@ -15,15 +15,15 @@ use ares_core::event::Event;
 use ares_core::job::Job;
 use ares_core::parse_ports;
 use ares_core::timing::ScanMode;
-use chrono::Utc;
 use ares_modules::builtin_registry;
 use ares_output::{
     diff_collectors, diff_findings, filter_diff_by_severity, filter_findings_collapsed,
     findings_diff_to_csv, findings_diff_to_csv_filtered, findings_to_csv_min, parse_min_severity,
     OutputFormat, Renderer, RunStore,
 };
-use ares_proto::post_json;
 use ares_plugin_api::{register_discovered, Capability, ModuleCtx, PluginRegistry};
+use ares_proto::post_json;
+use chrono::Utc;
 use clap::{Parser, Subcommand, ValueEnum};
 use parking_lot::Mutex;
 use tracing_subscriber::EnvFilter;
@@ -130,9 +130,7 @@ enum Commands {
         action: ScriptsCmd,
     },
     /// ASN / CDN enrichment
-    Asn {
-        targets: Vec<String>,
-    },
+    Asn { targets: Vec<String> },
     /// Service / banner detection
     Service {
         targets: Vec<String>,
@@ -193,7 +191,11 @@ enum Commands {
     /// Active misconfig checks
     Test {
         targets: Vec<String>,
-        #[arg(short, long, default_value = "21,80,88,161,389,443,1433,1521,1883,2181,2375,2379,3000,3389,4222,5601,5672,5900,5984,5985,6379,6443,7474,7687,8080,8123,8500,9000,9042,9090,9092,9200,11211,15672,27017")]
+        #[arg(
+            short,
+            long,
+            default_value = "21,80,88,161,389,443,1433,1521,1883,2181,2375,2379,3000,3389,4222,5601,5672,5900,5984,5985,6379,6443,7474,7687,8080,8123,8500,9000,9042,9090,9092,9200,11211,15672,27017"
+        )]
         ports: String,
         /// Skip sensitive path probes
         #[arg(long)]
@@ -481,8 +483,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
     let workspace_id = workspace::resolve_workspace_id(cli.workspace.as_deref());
     let ephemeral = cli.ephemeral;
     let renderer = Renderer::new(format, color).with_quiet(quiet);
-    let show_banner = !quiet
-        && matches!(format, OutputFormat::Table | OutputFormat::Plain);
+    let show_banner = !quiet && matches!(format, OutputFormat::Table | OutputFormat::Plain);
     if show_banner {
         brand::print_banner(color);
     }
@@ -512,9 +513,14 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
             println!("tls: rustls + cert scrape (version/cipher/ALPN/SAN/expiry) + SNI");
             println!("fp: ares fp <host>  (TLS + HTTPS GET + banners + OS hints)");
             println!("path: OS traceroute/tracert + TCP TTL fallback");
-            println!("plugins: script + native ABI v{}", ares_plugin_api::NATIVE_ABI_VERSION);
+            println!(
+                "plugins: script + native ABI v{}",
+                ares_plugin_api::NATIVE_ABI_VERSION
+            );
             println!("syn: --syn => syn-compat (Windows) | syn-raw+arp (Linux --features raw)");
-            println!("udp: selective elicit; no reply = open|filtered (no ICMP unreachable on Windows)");
+            println!(
+                "udp: selective elicit; no reply = open|filtered (no ICMP unreachable on Windows)"
+            );
             println!("scan: --discover then live hosts; --pn skips discover; --script-pack <id>");
             println!("scripts: ares scripts list  (packs/ NSE-style observe packs)");
             println!("probe: ares probe web|apps|infra|quick <targets>");
@@ -524,7 +530,10 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
             println!("arp: ares discover --arp (Linux+raw L2 sweep)");
             println!("mode: quiet|normal|fast|insane|stealth (jitter+shuffle+slow paths)");
             println!("ports: top100|top1000|apps|infra|web|all  (see: ares proto list)");
-            println!("protos: {} observes  (ares proto list)", PROTO_CATALOG.len());
+            println!(
+                "protos: {} observes  (ares proto list)",
+                PROTO_CATALOG.len()
+            );
         }
         Commands::Doctor => {
             println!("{} doctor", brand::PRODUCT);
@@ -534,11 +543,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
             println!("plugins dir: {}", plugins_root.display());
             let packs_root = script_pack::resolve_packs_root();
             let pack_n = script_pack::list_packs(&packs_root).len();
-            println!(
-                "packs dir:   {} ({} pack(s))",
-                packs_root.display(),
-                pack_n
-            );
+            println!("packs dir:   {} ({} pack(s))", packs_root.display(), pack_n);
             if let Ok(exe) = std::env::current_exe() {
                 println!("binary:      {}", exe.display());
             }
@@ -546,7 +551,10 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
             {
                 if let Some(local) = dirs::data_local_dir() {
                     let dbg = local.join("aresbird-target").join("debug").join("ares.exe");
-                    let rel = local.join("aresbird-target").join("release").join("ares.exe");
+                    let rel = local
+                        .join("aresbird-target")
+                        .join("release")
+                        .join("ares.exe");
                     println!(
                         "build tip:   {}",
                         if rel.exists() {
@@ -565,13 +573,28 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
             println!(
                 "raw/syn:     {}",
                 if raw {
-                    "available (Linux+raw)"
+                    "available (Linux+raw) — true half-open SYN"
                 } else {
-                    "syn-compat only (build with --features raw on Linux)"
+                    "syn-compat only (aggressive connect; NOT half-open). Linux: --features raw"
                 }
             );
+            #[cfg(windows)]
+            {
+                println!("windows:     TCP connect scan; --syn = syn-compat (not Nmap -sS)");
+                println!("windows:     UDP silence → open|filtered (no ICMP port-unreachable)");
+                println!("windows:     traceroute = TCP TTL / OS tracert best-effort");
+                println!("windows:     set CARGO_TARGET_DIR=%LOCALAPPDATA%\\aresbird-target (SAC)");
+            }
+            #[cfg(not(windows))]
+            {
+                println!("platform:    ICMP/UDP semantics depend on privileges + OS stack");
+            }
             println!("modes:       quiet|normal|fast|insane|stealth");
             println!("path profiles: default|api|web|all");
+            println!("fingerprint: soft OS hints (TTL/banner/SMB) — not Nmap -O");
+            println!("talk --repl: http|https|redis duplex; ssh = observe-only (no shell)");
+            println!("install:     cargo install --path crates/ares-cli  OR GitHub Releases");
+            println!("packs:       default | web | infra  (ares scripts list)");
             for (k, label) in [
                 ("ARES_DATA_DIR", "store directory"),
                 ("ARES_STORE_PATH", "runs.db path"),
@@ -586,7 +609,10 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                     Err(_) => println!("env {k}: (unset) — {label}"),
                 }
             }
-            println!("workspace:   {workspace_id}{}", if ephemeral { " (ephemeral)" } else { "" });
+            println!(
+                "workspace:   {workspace_id}{}",
+                if ephemeral { " (ephemeral)" } else { "" }
+            );
             match RunStore::open_default() {
                 Ok(store) => match store.count() {
                     Ok(n) => println!("store:       {} ({} runs)", store.path().display(), n),
@@ -604,28 +630,25 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
         }
         Commands::Plugin { action } => match action {
             PluginCmd::List { cap } => {
-                let filter_cap = cap.as_deref().and_then(|s| {
-                    match s.to_ascii_lowercase().as_str() {
-                        "passive" => Some(Capability::Passive),
-                        "discover" | "recon" => Some(Capability::Discover),
-                        "scan" => Some(Capability::Scan),
-                        "interact" | "talk" => Some(Capability::Interact),
-                        "active" | "activetest" | "test" | "misconfig" => {
-                            Some(Capability::ActiveTest)
-                        }
-                        _ => None,
-                    }
-                });
+                let filter_cap =
+                    cap.as_deref()
+                        .and_then(|s| match s.to_ascii_lowercase().as_str() {
+                            "passive" => Some(Capability::Passive),
+                            "discover" | "recon" => Some(Capability::Discover),
+                            "scan" => Some(Capability::Scan),
+                            "interact" | "talk" => Some(Capability::Interact),
+                            "active" | "activetest" | "test" | "misconfig" => {
+                                Some(Capability::ActiveTest)
+                            }
+                            _ => None,
+                        });
                 if cap.is_some() && filter_cap.is_none() {
                     anyhow::bail!(
                         "unknown capability `{cap}` — use passive|discover|scan|interact|active",
                         cap = cap.as_deref().unwrap_or("")
                     );
                 }
-                println!(
-                    "{:<20} {:<40} {}",
-                    "NAME", "CAPABILITIES", "DESCRIPTION"
-                );
+                println!("{:<20} {:<40} {}", "NAME", "CAPABILITIES", "DESCRIPTION");
                 for m in registry.list() {
                     if let Some(c) = filter_cap {
                         if !m.capabilities().contains(&c) {
@@ -642,7 +665,10 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 }
                 let discovered = ares_plugin_api::discover_plugin_dir(&plugins_root);
                 if !discovered.is_empty() {
-                    println!("\nDiscovered plugin manifests in {}:", plugins_root.display());
+                    println!(
+                        "\nDiscovered plugin manifests in {}:",
+                        plugins_root.display()
+                    );
                     for d in discovered {
                         let caps = d.manifest.capabilities.join(",");
                         println!(
@@ -664,8 +690,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 }
                 let discovered = ares_plugin_api::discover_plugin_dir(&plugins_root);
                 if let Some(d) = discovered.iter().find(|d| {
-                    d.manifest.name == name
-                        || d.manifest.aliases.iter().any(|a| a == &name)
+                    d.manifest.name == name || d.manifest.aliases.iter().any(|a| a == &name)
                 }) {
                     println!("manifest: {}", d.dir.join("plugin.json").display());
                     if let Some(v) = &d.manifest.version {
@@ -725,8 +750,8 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                     true,
                     cli.save,
                     extra_map,
-                ephemeral,
-                &workspace_id,
+                    ephemeral,
+                    &workspace_id,
                 )
                 .await?;
             }
@@ -787,11 +812,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 with_f.sort_by(|a, b| b.findings.len().cmp(&a.findings.len()));
                 for h in with_f.into_iter().take(8) {
                     let name = h.hostname.as_deref().unwrap_or("-");
-                    println!(
-                        "  · {} ({name}): {} finding(s)",
-                        h.addr,
-                        h.findings.len()
-                    );
+                    println!("  · {} ({name}): {} finding(s)", h.addr, h.findings.len());
                 }
             }
             ReportCmd::Workspace { name } => {
@@ -817,9 +838,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                         .map(|h| {
                             h.ports
                                 .values()
-                                .filter(|p| {
-                                    p.state == ares_core::model::PortState::Open
-                                })
+                                .filter(|p| p.state == ares_core::model::PortState::Open)
                                 .count()
                         })
                         .sum::<usize>()
@@ -1108,15 +1127,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 eprintln!("ares probe {profile} → {name}");
             }
             let (mut collector, mut graph) = pipeline::run_pipeline_owned(
-                pipe,
-                &name,
-                mode,
-                &renderer,
-                &registry,
-                true,
-                false,
-                None,
-                None,
+                pipe, &name, mode, &renderer, &registry, true, false, None, None,
             )
             .await?;
             if let Some(pack_id) = script_pack {
@@ -1145,15 +1156,8 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                         emit_collector.lock().push(event.clone());
                         live.print_event_live(&event);
                     });
-                let _ = script_pack::run_script_pack(
-                    &pack_id,
-                    &open,
-                    mode,
-                    quiet,
-                    emit,
-                    cancel,
-                )
-                .await?;
+                let _ = script_pack::run_script_pack(&pack_id, &open, mode, quiet, emit, cancel)
+                    .await?;
                 collector = collector_arc.lock().clone();
                 graph = graph_arc.lock().clone();
                 renderer.render_summary(&collector, &graph);
@@ -1181,7 +1185,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                     eprintln!("fail-on-new: no baseline yet (saved as first run)");
                 }
             }
-        },
+        }
         Commands::Watch { action } => match action {
             WatchCmd::Probe {
                 profile,
@@ -1234,7 +1238,11 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 .await?;
             }
         },
-        Commands::Discover { targets, arp, ports } => {
+        Commands::Discover {
+            targets,
+            arp,
+            ports,
+        } => {
             let mut extra = serde_json::Map::new();
             if arp {
                 extra.insert("arp".into(), serde_json::Value::Bool(true));
@@ -1307,14 +1315,9 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 let skip: Vec<serde_json::Value> = collector
                     .scanned_pairs()
                     .into_iter()
-                    .map(|(a, p)| {
-                        serde_json::json!({ "addr": a.to_string(), "port": p })
-                    })
+                    .map(|(a, p)| serde_json::json!({ "addr": a.to_string(), "port": p }))
                     .collect();
-                eprintln!(
-                    "resume from {id}: {} pairs already scanned",
-                    skip.len()
-                );
+                eprintln!("resume from {id}: {} pairs already scanned", skip.len());
                 extra.insert("skip_pairs".into(), serde_json::Value::Array(skip));
                 prior_collector = Some(collector);
                 prior_graph = Some(graph);
@@ -1336,17 +1339,16 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
             .await?;
 
             // Merge prior + new for save/report continuity
-            let (mut collector, mut graph) = if let (Some(mut prior_c), Some(mut prior_g)) =
-                (prior_collector, prior_graph)
-            {
-                for e in &collector.events {
-                    prior_g.apply(e);
-                    prior_c.push(e.clone());
-                }
-                (prior_c, prior_g)
-            } else {
-                (collector, graph)
-            };
+            let (mut collector, mut graph) =
+                if let (Some(mut prior_c), Some(mut prior_g)) = (prior_collector, prior_graph) {
+                    for e in &collector.events {
+                        prior_g.apply(e);
+                        prior_c.push(e.clone());
+                    }
+                    (prior_c, prior_g)
+                } else {
+                    (collector, graph)
+                };
 
             if service {
                 let ports = collector
@@ -1412,15 +1414,8 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                         emit_collector.lock().push(event.clone());
                         live.print_event_live(&event);
                     });
-                let _ = script_pack::run_script_pack(
-                    &pack_id,
-                    &open,
-                    mode,
-                    quiet,
-                    emit,
-                    cancel,
-                )
-                .await?;
+                let _ = script_pack::run_script_pack(&pack_id, &open, mode, quiet, emit, cancel)
+                    .await?;
                 collector = collector_arc.lock().clone();
                 graph = graph_arc.lock().clone();
                 if !ephemeral {
@@ -1583,10 +1578,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                     extra.insert(
                         "follow_paths".into(),
                         serde_json::Value::Array(
-                            paths
-                                .into_iter()
-                                .map(serde_json::Value::String)
-                                .collect(),
+                            paths.into_iter().map(serde_json::Value::String).collect(),
                         ),
                     );
                 }
@@ -1718,8 +1710,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 eprintln!("[!] --new-only/--fail-on-new ignored without a baseline run yet");
             }
 
-            let current_ge =
-                filter_findings_collapsed(collector.findings_collapsed(), min_rank);
+            let current_ge = filter_findings_collapsed(collector.findings_collapsed(), min_rank);
             let any_count = current_ge.len();
 
             if let Some(url) = notify.as_deref() {
@@ -1735,39 +1726,39 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                     }
                 };
                 if fire {
-                    let findings_json: Vec<serde_json::Value> = if baseline_id.is_some()
-                        && matches!(notify_on, NotifyOn::New)
-                    {
-                        // Prefer delta keys already printed; rebuild from current − baseline.
-                        let store = RunStore::open_default()?;
-                        let (base, _) = store.load(baseline_id.unwrap())?;
-                        let diff = filter_diff_by_severity(diff_findings(&base, &collector), min_rank);
-                        diff.added
-                            .iter()
-                            .map(|r| {
-                                serde_json::json!({
-                                    "severity": r.severity,
-                                    "host": r.host.to_string(),
-                                    "port": r.port,
-                                    "finding": r.finding,
-                                    "peers": r.peers,
+                    let findings_json: Vec<serde_json::Value> =
+                        if baseline_id.is_some() && matches!(notify_on, NotifyOn::New) {
+                            // Prefer delta keys already printed; rebuild from current − baseline.
+                            let store = RunStore::open_default()?;
+                            let (base, _) = store.load(baseline_id.unwrap())?;
+                            let diff =
+                                filter_diff_by_severity(diff_findings(&base, &collector), min_rank);
+                            diff.added
+                                .iter()
+                                .map(|r| {
+                                    serde_json::json!({
+                                        "severity": r.severity,
+                                        "host": r.host.to_string(),
+                                        "port": r.port,
+                                        "finding": r.finding,
+                                        "peers": r.peers,
+                                    })
                                 })
-                            })
-                            .collect()
-                    } else {
-                        current_ge
-                            .iter()
-                            .map(|(host, port, sev, finding, peers)| {
-                                serde_json::json!({
-                                    "severity": sev,
-                                    "host": host.to_string(),
-                                    "port": port,
-                                    "finding": finding,
-                                    "peers": peers,
+                                .collect()
+                        } else {
+                            current_ge
+                                .iter()
+                                .map(|(host, port, sev, finding, peers)| {
+                                    serde_json::json!({
+                                        "severity": sev,
+                                        "host": host.to_string(),
+                                        "port": port,
+                                        "finding": finding,
+                                        "peers": peers,
+                                    })
                                 })
-                            })
-                            .collect()
-                    };
+                                .collect()
+                        };
                     let payload = serde_json::json!({
                         "source": "aresbird",
                         "module": "active-misconfig",
@@ -1794,9 +1785,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
 
             if fail_on_any {
                 if any_count > 0 {
-                    eprintln!(
-                        "error: {any_count} finding(s) ≥ {min_severity} (--fail-on-any)"
-                    );
+                    eprintln!("error: {any_count} finding(s) ≥ {min_severity} (--fail-on-any)");
                     std::process::exit(2);
                 }
             }
@@ -2164,14 +2153,9 @@ async fn run_proto(
 ) -> anyhow::Result<()> {
     match action {
         ProtoCmd::List => {
-            println!(
-                "{:<16} {:>6}  {}",
-                "PROTO", "PORT", "NOTES"
-            );
+            println!("{:<16} {:>6}  {}", "PROTO", "PORT", "NOTES");
             for (name, port, notes) in PROTO_CATALOG {
-                let p = port
-                    .map(|p| p.to_string())
-                    .unwrap_or_else(|| "-".into());
+                let p = port.map(|p| p.to_string()).unwrap_or_else(|| "-".into());
                 println!("{name:<16} {p:>6}  {notes}");
             }
             println!();
@@ -2251,9 +2235,7 @@ async fn run_proto(
         }
         ProtoCmd::Observe(args) => {
             if args.len() < 2 {
-                anyhow::bail!(
-                    "usage: ares proto <name> <target>  (try: ares proto list)"
-                );
+                anyhow::bail!("usage: ares proto <name> <target>  (try: ares proto list)");
             }
             let proto = args[0].to_ascii_lowercase();
             let target = args[1].clone();
@@ -2305,10 +2287,7 @@ async fn run_talk_proto(
     workspace_id: &str,
 ) -> anyhow::Result<()> {
     let mut extra = serde_json::Map::new();
-    extra.insert(
-        "proto".into(),
-        serde_json::Value::String(proto.into()),
-    );
+    extra.insert("proto".into(), serde_json::Value::String(proto.into()));
     run_module(
         registry,
         "talk",

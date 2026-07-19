@@ -62,9 +62,7 @@ pub fn resolve_plugins_root() -> PathBuf {
             return path;
         }
     }
-    std::env::current_dir()
-        .unwrap_or_default()
-        .join("plugins")
+    std::env::current_dir().unwrap_or_default().join("plugins")
 }
 
 /// Scan `plugins/*/plugin.json` and return manifests.
@@ -164,7 +162,10 @@ fn emit_stdout_lines(ctx: &crate::ModuleCtx, stdout: &str, as_ndjson: bool) {
         if line.len() > 65_536 {
             ctx.emit(Event::Log {
                 level: "warn".into(),
-                message: format!("plugin ndjson line too long ({} bytes), skipped", line.len()),
+                message: format!(
+                    "plugin ndjson line too long ({} bytes), skipped",
+                    line.len()
+                ),
             });
             continue;
         }
@@ -280,12 +281,12 @@ impl Module for ScriptPlugin {
                 let _ = stdin.write_all(b"\n").await;
                 drop(stdin);
             }
-            let out = match timeout(Duration::from_secs(timeout_secs), child.wait_with_output()).await
-            {
-                Ok(Ok(o)) => o,
-                Ok(Err(e)) => anyhow::bail!("plugin `{name}` wait failed: {e}"),
-                Err(_) => anyhow::bail!("plugin `{name}` timed out after {timeout_secs}s"),
-            };
+            let out =
+                match timeout(Duration::from_secs(timeout_secs), child.wait_with_output()).await {
+                    Ok(Ok(o)) => o,
+                    Ok(Err(e)) => anyhow::bail!("plugin `{name}` wait failed: {e}"),
+                    Err(_) => anyhow::bail!("plugin `{name}` timed out after {timeout_secs}s"),
+                };
             let stdout = String::from_utf8_lossy(&out.stdout);
             let stderr = String::from_utf8_lossy(&out.stderr);
             emit_stdout_lines(&ctx, &stdout, emit_ndjson);

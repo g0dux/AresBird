@@ -51,8 +51,7 @@ impl Module for ServiceModule {
                 open
             } else {
                 // open ∩ requested ports (pipeline `ports: open:web` etc.)
-                open
-                    .into_iter()
+                open.into_iter()
                     .filter(|(_, p)| ctx.ports.contains(p))
                     .collect()
             };

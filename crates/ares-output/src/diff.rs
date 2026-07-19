@@ -78,9 +78,7 @@ fn finding_keys(c: &EventCollector) -> BTreeSet<String> {
     c.findings_collapsed()
         .into_iter()
         .map(|(_addr, port, severity, finding, _peers)| {
-            let p = port
-                .map(|x| x.to_string())
-                .unwrap_or_else(|| "-".into());
+            let p = port.map(|x| x.to_string()).unwrap_or_else(|| "-".into());
             format!("{severity}|{p}|{finding}")
         })
         .collect()
@@ -210,11 +208,7 @@ pub fn findings_diff_to_csv_filtered(diff: &FindingsDiffReport, added_only: bool
             "added,{},{},{},{},{}\n",
             csv_cell(&row.severity),
             csv_cell(&row.host.to_string()),
-            csv_cell(
-                &row.port
-                    .map(|p| p.to_string())
-                    .unwrap_or_default()
-            ),
+            csv_cell(&row.port.map(|p| p.to_string()).unwrap_or_default()),
             row.peers,
             csv_cell(&row.finding),
         ));
@@ -225,11 +219,7 @@ pub fn findings_diff_to_csv_filtered(diff: &FindingsDiffReport, added_only: bool
                 "removed,{},{},{},{},{}\n",
                 csv_cell(&row.severity),
                 csv_cell(&row.host.to_string()),
-                csv_cell(
-                    &row.port
-                        .map(|p| p.to_string())
-                        .unwrap_or_default()
-                ),
+                csv_cell(&row.port.map(|p| p.to_string()).unwrap_or_default()),
                 row.peers,
                 csv_cell(&row.finding),
             ));

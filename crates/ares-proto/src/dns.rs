@@ -26,7 +26,11 @@ impl DnsEngine {
                 for ip in lookup.iter() {
                     emit(Event::DnsRecord {
                         name: name.to_string(),
-                        record_type: if ip.is_ipv4() { "A".into() } else { "AAAA".into() },
+                        record_type: if ip.is_ipv4() {
+                            "A".into()
+                        } else {
+                            "AAAA".into()
+                        },
                         value: ip.to_string(),
                     });
                     out.push(ip);
@@ -80,12 +84,18 @@ impl DnsEngine {
     }
 
     /// Full recon-oriented resolution for a domain.
-    pub async fn enrich_domain(&self, name: &str, emit: impl Fn(Event) + Send + Sync + Clone) -> Vec<IpAddr> {
+    pub async fn enrich_domain(
+        &self,
+        name: &str,
+        emit: impl Fn(Event) + Send + Sync + Clone,
+    ) -> Vec<IpAddr> {
         let ips = self.resolve_a(name, emit.clone()).await;
         self.query_mx(name, emit.clone()).await;
         self.query_ns(name, emit.clone()).await;
         self.query_txt(name, emit.clone()).await;
-        for sub in ["www", "mail", "ftp", "vpn", "api", "dev", "staging", "admin", "portal", "ns1"] {
+        for sub in [
+            "www", "mail", "ftp", "vpn", "api", "dev", "staging", "admin", "portal", "ns1",
+        ] {
             let fqdn = format!("{sub}.{name}");
             let _ = self.resolve_a(&fqdn, emit.clone()).await;
         }

@@ -62,12 +62,12 @@ unsafe impl Sync for NativePlugin {}
 impl NativePlugin {
     /// Open a native plugin library and resolve required symbols.
     pub unsafe fn open(path: &Path) -> anyhow::Result<Self> {
-        let lib = Library::new(path)
-            .map_err(|e| anyhow::anyhow!("load {}: {e}", path.display()))?;
+        let lib =
+            Library::new(path).map_err(|e| anyhow::anyhow!("load {}: {e}", path.display()))?;
 
-        let api_version: libloading::Symbol<FnApiVersion> = lib
-            .get(b"ares_plugin_api_version\0")
-            .map_err(|e| anyhow::anyhow!("missing ares_plugin_api_version: {e}"))?;
+        let api_version: libloading::Symbol<FnApiVersion> =
+            lib.get(b"ares_plugin_api_version\0")
+                .map_err(|e| anyhow::anyhow!("missing ares_plugin_api_version: {e}"))?;
         let ver = api_version();
         if ver != NATIVE_ABI_VERSION {
             anyhow::bail!(
@@ -295,7 +295,9 @@ pub fn try_load_native(dir: &Path, library: &str) -> anyhow::Result<NativePlugin
     }
 
     let hint = if tried.is_empty() {
-        format!("library not found: {library} (searched plugin dir + %LOCALAPPDATA%\\aresbird-plugins)")
+        format!(
+            "library not found: {library} (searched plugin dir + %LOCALAPPDATA%\\aresbird-plugins)"
+        )
     } else {
         format!(
             "failed to load `{library}` after trying: {}; last error: {}",

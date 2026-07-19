@@ -36,9 +36,9 @@ pub async fn run_talk_repl(opts: ReplOpts) -> anyhow::Result<(EventCollector, As
         "http" | "https" => run_http_repl(opts, proto == "https").await,
         "redis" => run_redis_repl(opts).await,
         "ssh" => run_ssh_repl(opts).await,
-        other => anyhow::bail!(
-            "talk --repl supports http|https|redis|ssh (got `{other}`; use --proto)"
-        ),
+        other => {
+            anyhow::bail!("talk --repl supports http|https|redis|ssh (got `{other}`; use --proto)")
+        }
     }
 }
 
@@ -84,11 +84,7 @@ struct SessionState {
 fn begin_session(
     opts: &ReplOpts,
     module_name: &str,
-) -> (
-    SessionState,
-    Job,
-    Arc<dyn Fn(Event) + Send + Sync>,
-) {
+) -> (SessionState, Job, Arc<dyn Fn(Event) + Send + Sync>) {
     let graph = Arc::new(Mutex::new(AssetGraph::new()));
     let collector = Arc::new(Mutex::new(EventCollector::new()));
     let mut job = Job::new(module_name, opts.mode);
@@ -164,9 +160,7 @@ fn finish_session(
     let collector_out = state.collector.lock().clone();
     let graph_out = state.graph.lock().clone();
     if !matches!(state.renderer.format, OutputFormat::Jsonl) {
-        state
-            .renderer
-            .render_summary(&collector_out, &graph_out);
+        state.renderer.render_summary(&collector_out, &graph_out);
     }
     if state.save {
         let store = RunStore::open_default()?;
@@ -329,11 +323,7 @@ async fn run_http_repl(
         }
     }
 
-    let note = format!(
-        "{} hop(s), {} cookie(s)",
-        transcript.len(),
-        jar.len()
-    );
+    let note = format!("{} hop(s), {} cookie(s)", transcript.len(), jar.len());
     let addr = resolved.addr;
     let port = resolved.port;
     finish_session(state, job, transcript, note, addr, port)
@@ -440,33 +430,38 @@ async fn run_redis_repl(opts: ReplOpts) -> anyhow::Result<(EventCollector, Asset
     });
 
     let sa = SocketAddr::new(addr, port);
-    let mut stream: Option<TcpStream> = match timeout(Duration::from_secs(5), TcpStream::connect(sa)).await
-    {
-        Ok(Ok(s)) => Some(s),
-        Ok(Err(e)) => {
-            emit(Event::Log {
-                level: "warn".into(),
-                message: format!("redis connect {sa}: {e} (REPL still open; will retry on command)"),
-            });
-            if !opts.renderer.quiet {
-                eprintln!("! connect failed: {e} — type help | quit; commands retry connect");
+    let mut stream: Option<TcpStream> =
+        match timeout(Duration::from_secs(5), TcpStream::connect(sa)).await {
+            Ok(Ok(s)) => Some(s),
+            Ok(Err(e)) => {
+                emit(Event::Log {
+                    level: "warn".into(),
+                    message: format!(
+                        "redis connect {sa}: {e} (REPL still open; will retry on command)"
+                    ),
+                });
+                if !opts.renderer.quiet {
+                    eprintln!("! connect failed: {e} — type help | quit; commands retry connect");
+                }
+                None
             }
-            None
-        }
-        Err(_) => {
-            emit(Event::Log {
-                level: "warn".into(),
-                message: format!("redis connect {sa}: timeout (REPL still open)"),
-            });
-            if !opts.renderer.quiet {
-                eprintln!("! connect timeout — type help | quit; commands retry connect");
+            Err(_) => {
+                emit(Event::Log {
+                    level: "warn".into(),
+                    message: format!("redis connect {sa}: timeout (REPL still open)"),
+                });
+                if !opts.renderer.quiet {
+                    eprintln!("! connect timeout — type help | quit; commands retry connect");
+                }
+                None
             }
-            None
-        }
-    };
+        };
 
     if !opts.renderer.quiet {
-        eprintln!("talk REPL → redis://{addr}:{port}  (session {})", state.session_id);
+        eprintln!(
+            "talk REPL → redis://{addr}:{port}  (session {})",
+            state.session_id
+        );
         eprintln!("read-only: PING INFO GET EXISTS DBSIZE TIME | help | quit");
     }
 
@@ -612,7 +607,10 @@ async fn redis_cmd(
         detail: format!("{label} → {}", text.chars().take(120).collect::<String>()),
         confidence: 0.9,
     });
-    transcript.push(format!("{label} → {}", text.chars().take(80).collect::<String>()));
+    transcript.push(format!(
+        "{label} → {}",
+        text.chars().take(80).collect::<String>()
+    ));
     Ok(text)
 }
 
@@ -629,8 +627,12 @@ async fn run_ssh_repl(opts: ReplOpts) -> anyhow::Result<(EventCollector, AssetGr
     });
 
     if !opts.renderer.quiet {
-        eprintln!("talk REPL → ssh://{addr}:{port}  (session {})", state.session_id);
-        eprintln!("observe-only (no shell): banner | probe | help | quit");
+        eprintln!(
+            "talk REPL → ssh://{addr}:{port}  (session {})",
+            state.session_id
+        );
+        eprintln!("OBSERVE-ONLY — no shell, no auth, no SCP (use OpenSSH client for interactive)");
+        eprintln!("commands: banner | algs | probe | help | quit");
     }
 
     let mut transcript = Vec::new();
@@ -640,11 +642,22 @@ async fn run_ssh_repl(opts: ReplOpts) -> anyhow::Result<(EventCollector, AssetGr
             if !opts.renderer.quiet {
                 eprintln!("→ {b}");
             }
+            if let Some(hint) = ssh_banner_hint(&b) {
+                if !opts.renderer.quiet {
+                    eprintln!("  hint: {hint}");
+                }
+                transcript.push(format!("hint → {hint}"));
+            }
         }
-        Err(e) => emit(Event::Log {
-            level: "warn".into(),
-            message: format!("ssh banner failed: {e}"),
-        }),
+        Err(e) => {
+            emit(Event::Log {
+                level: "warn".into(),
+                message: format!("ssh banner failed: {e} (REPL still open; try banner later)"),
+            });
+            if !opts.renderer.quiet {
+                eprintln!("! banner failed: {e} — type help | quit");
+            }
+        }
     }
 
     loop {
@@ -659,9 +672,12 @@ async fn run_ssh_repl(opts: ReplOpts) -> anyhow::Result<(EventCollector, AssetGr
             break;
         }
         if matches!(lower.as_str(), "help" | "?") {
-            eprintln!("  banner   re-grab SSH identification string");
-            eprintln!("  probe    send AresBird client id + read reply bytes");
-            eprintln!("  quit     (full interactive SSH shell is not implemented — observe only)");
+            eprintln!("  banner   re-grab SSH identification string + soft OS hint");
+            eprintln!("  algs     parse common tokens from banner (OpenSSH version family)");
+            eprintln!("  probe    send AresBird client id + observe binary kex bytes (no auth)");
+            eprintln!("  quit");
+            eprintln!();
+            eprintln!("  This is NOT an interactive SSH shell. No password/key login.");
             continue;
         }
         if lower == "banner" {
@@ -669,6 +685,28 @@ async fn run_ssh_repl(opts: ReplOpts) -> anyhow::Result<(EventCollector, AssetGr
                 Ok(b) => {
                     transcript.push(format!("banner → {b}"));
                     eprintln!("→ {b}");
+                    if let Some(hint) = ssh_banner_hint(&b) {
+                        eprintln!("  hint: {hint}");
+                        transcript.push(format!("hint → {hint}"));
+                    }
+                }
+                Err(e) => eprintln!("! {e}"),
+            }
+            continue;
+        }
+        if lower == "algs" {
+            match SshBanner::grab(addr, port, |e| emit(e)).await {
+                Ok(b) => {
+                    let summary = ssh_algs_summary(&b);
+                    transcript.push(format!("algs → {summary}"));
+                    eprintln!("→ {summary}");
+                    emit(Event::ProbeResult {
+                        addr,
+                        port,
+                        probe: "ssh-repl-algs".into(),
+                        detail: summary,
+                        confidence: 0.55,
+                    });
                 }
                 Err(e) => eprintln!("! {e}"),
             }
@@ -681,7 +719,7 @@ async fn run_ssh_repl(opts: ReplOpts) -> anyhow::Result<(EventCollector, AssetGr
             }
             continue;
         }
-        eprintln!("unknown command (try help)");
+        eprintln!("unknown command (try help) — note: no interactive shell here");
     }
 
     let note = format!("ssh {} step(s)", transcript.len());
@@ -708,9 +746,7 @@ async fn ssh_probe_kex(
         .await
         .unwrap_or(Ok(0))
         .unwrap_or(0);
-    let detail = format!(
-        "server={banner}; kex_bytes={m} (binary handshake observed, no auth)"
-    );
+    let detail = format!("server={banner}; kex_bytes={m} (binary handshake observed, no auth)");
     emit(Event::ProbeResult {
         addr,
         port,
@@ -720,4 +756,41 @@ async fn ssh_probe_kex(
     });
     transcript.push(detail.clone());
     Ok(detail)
+}
+
+fn ssh_banner_hint(banner: &str) -> Option<String> {
+    let t = banner.to_ascii_lowercase();
+    if t.contains("openssh") {
+        if t.contains("windows") || t.contains("cygwin") {
+            return Some("OpenSSH on Windows / Cygwin".into());
+        }
+        if t.contains("ubuntu") {
+            return Some("OpenSSH on Ubuntu".into());
+        }
+        if t.contains("debian") {
+            return Some("OpenSSH on Debian".into());
+        }
+        return Some("OpenSSH (Unix-like host likely)".into());
+    }
+    if t.contains("dropbear") {
+        return Some("Dropbear — often embedded / IoT".into());
+    }
+    if t.contains("cisco") {
+        return Some("Cisco SSH stack".into());
+    }
+    None
+}
+
+fn ssh_algs_summary(banner: &str) -> String {
+    let trimmed = banner.trim();
+    // SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.10
+    let product = trimmed
+        .strip_prefix("SSH-2.0-")
+        .or_else(|| trimmed.strip_prefix("SSH-1.99-"))
+        .unwrap_or(trimmed);
+    let version = product
+        .split(|c: char| c == '_' || c == ' ' || c == '-')
+        .nth(1)
+        .unwrap_or("?");
+    format!("product={product}; version_token={version}; auth=not-attempted")
 }

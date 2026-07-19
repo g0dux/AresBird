@@ -61,9 +61,7 @@ pub fn resolve_packs_root() -> PathBuf {
             return path;
         }
     }
-    std::env::current_dir()
-        .unwrap_or_default()
-        .join("packs")
+    std::env::current_dir().unwrap_or_default().join("packs")
 }
 
 pub fn list_packs(root: impl AsRef<Path>) -> Vec<(String, PackMeta)> {
@@ -117,11 +115,7 @@ pub fn list_scripts(root: impl AsRef<Path>, pack_filter: Option<&str>) -> Vec<Pa
             out.push(PackScriptInfo {
                 pack: id.clone(),
                 name: disc.manifest.name.clone(),
-                description: disc
-                    .manifest
-                    .description
-                    .clone()
-                    .unwrap_or_default(),
+                description: disc.manifest.description.clone().unwrap_or_default(),
                 ports: disc.manifest.default_ports.clone(),
                 kind: "script",
                 categories: disc.manifest.categories.clone(),
@@ -141,7 +135,10 @@ fn builtin_info(pack: &str, name: &str) -> Option<PackScriptInfo> {
     let (desc, ports) = match name {
         "ftp-banner" => ("FTP 220 banner observe", vec![21]),
         "ssh-banner" => ("SSH protocol banner observe", vec![22]),
-        "http-server" => ("HTTP Server header / title observe", vec![80, 8080, 8000, 8888]),
+        "http-server" => (
+            "HTTP Server header / title observe",
+            vec![80, 8080, 8000, 8888],
+        ),
         "redis-info" => ("Redis PING/NOAUTH observe", vec![6379]),
         "smtp-banner" => ("SMTP greeting observe", vec![25, 587]),
         "mysql-greeting" => ("MySQL/MariaDB greeting observe", vec![3306]),
@@ -308,7 +305,10 @@ pub async fn run_script_pack(
             ports.sort_unstable();
             let mut extra = serde_json::Map::new();
             extra.insert("pack".into(), serde_json::json!(pack_id));
-            extra.insert("open_ports".into(), serde_json::Value::Array(open_json.clone()));
+            extra.insert(
+                "open_ports".into(),
+                serde_json::Value::Array(open_json.clone()),
+            );
             extra.insert("open_ports_csv".into(), serde_json::json!(open_csv));
             let ctx = ModuleCtx {
                 cancel: cancel.clone(),
@@ -357,123 +357,303 @@ async fn run_builtin(name: &str, op: &OpenPort, emit: &Arc<dyn Fn(Event) + Send 
         "redis-info" => builtin_redis(op, emit).await,
         "mysql-greeting" => {
             let e = emit.clone();
-            pack_observe(op, emit, "mysql-greeting", ares_proto::observe_mysql(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "mysql-greeting",
+                ares_proto::observe_mysql(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "postgres-startup" => {
             let e = emit.clone();
-            pack_observe(op, emit, "postgres-startup", ares_proto::observe_postgres(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "postgres-startup",
+                ares_proto::observe_postgres(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "mongodb-hello" => {
             let e = emit.clone();
-            pack_observe(op, emit, "mongodb-hello", ares_proto::observe_mongodb(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "mongodb-hello",
+                ares_proto::observe_mongodb(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "memcached-stats" => {
             let e = emit.clone();
-            pack_observe(op, emit, "memcached-stats", ares_proto::observe_memcached(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "memcached-stats",
+                ares_proto::observe_memcached(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "elasticsearch-root" => {
             let e = emit.clone();
-            pack_observe(op, emit, "elasticsearch-root", ares_proto::observe_elasticsearch(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "elasticsearch-root",
+                ares_proto::observe_elasticsearch(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "ldap-rootdse" => {
             let e = emit.clone();
-            pack_observe(op, emit, "ldap-rootdse", ares_proto::observe_ldap(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "ldap-rootdse",
+                ares_proto::observe_ldap(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "docker-version" => {
             let e = emit.clone();
-            pack_observe(op, emit, "docker-version", ares_proto::observe_docker(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "docker-version",
+                ares_proto::observe_docker(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "etcd-version" => {
             let e = emit.clone();
-            pack_observe(op, emit, "etcd-version", ares_proto::observe_etcd(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "etcd-version",
+                ares_proto::observe_etcd(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "consul-leader" => {
             let e = emit.clone();
-            pack_observe(op, emit, "consul-leader", ares_proto::observe_consul(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "consul-leader",
+                ares_proto::observe_consul(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "mqtt-connect" => {
             let e = emit.clone();
-            pack_observe(op, emit, "mqtt-connect", ares_proto::observe_mqtt(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "mqtt-connect",
+                ares_proto::observe_mqtt(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "amqp-start" => {
             let e = emit.clone();
-            pack_observe(op, emit, "amqp-start", ares_proto::observe_amqp(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "amqp-start",
+                ares_proto::observe_amqp(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "nats-info" => {
             let e = emit.clone();
-            pack_observe(op, emit, "nats-info", ares_proto::observe_nats(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "nats-info",
+                ares_proto::observe_nats(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "mssql-prelogin" => {
             let e = emit.clone();
-            pack_observe(op, emit, "mssql-prelogin", ares_proto::observe_mssql(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "mssql-prelogin",
+                ares_proto::observe_mssql(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "rdp-negotiate" => {
             let e = emit.clone();
-            pack_observe(op, emit, "rdp-negotiate", ares_proto::observe_rdp(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "rdp-negotiate",
+                ares_proto::observe_rdp(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "vnc-rfb" => {
             let e = emit.clone();
-            pack_observe(op, emit, "vnc-rfb", ares_proto::observe_vnc(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "vnc-rfb",
+                ares_proto::observe_vnc(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "grafana-health" => {
             let e = emit.clone();
-            pack_observe(op, emit, "grafana-health", ares_proto::observe_grafana(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "grafana-health",
+                ares_proto::observe_grafana(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "jenkins-headers" => {
             let e = emit.clone();
-            pack_observe(op, emit, "jenkins-headers", ares_proto::observe_jenkins(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "jenkins-headers",
+                ares_proto::observe_jenkins(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "cassandra-options" => {
             let e = emit.clone();
-            pack_observe(op, emit, "cassandra-options", ares_proto::observe_cassandra(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "cassandra-options",
+                ares_proto::observe_cassandra(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "zookeeper-ruok" => {
             let e = emit.clone();
-            pack_observe(op, emit, "zookeeper-ruok", ares_proto::observe_zookeeper(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "zookeeper-ruok",
+                ares_proto::observe_zookeeper(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "kafka-versions" => {
             let e = emit.clone();
-            pack_observe(op, emit, "kafka-versions", ares_proto::observe_kafka(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "kafka-versions",
+                ares_proto::observe_kafka(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "kibana-status" => {
             let e = emit.clone();
-            pack_observe(op, emit, "kibana-status", ares_proto::observe_kibana(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "kibana-status",
+                ares_proto::observe_kibana(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "prometheus-healthy" => {
             let e = emit.clone();
-            pack_observe(op, emit, "prometheus-healthy", ares_proto::observe_prometheus(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "prometheus-healthy",
+                ares_proto::observe_prometheus(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "couchdb-welcome" => {
             let e = emit.clone();
-            pack_observe(op, emit, "couchdb-welcome", ares_proto::observe_couchdb(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "couchdb-welcome",
+                ares_proto::observe_couchdb(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "neo4j-discovery" => {
             let e = emit.clone();
-            pack_observe(op, emit, "neo4j-discovery", ares_proto::observe_neo4j(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "neo4j-discovery",
+                ares_proto::observe_neo4j(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "clickhouse-ping" => {
             let e = emit.clone();
-            pack_observe(op, emit, "clickhouse-ping", ares_proto::observe_clickhouse(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "clickhouse-ping",
+                ares_proto::observe_clickhouse(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "minio-health" => {
             let e = emit.clone();
-            pack_observe(op, emit, "minio-health", ares_proto::observe_minio(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "minio-health",
+                ares_proto::observe_minio(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "rabbitmq-mgmt" => {
             let e = emit.clone();
-            pack_observe(op, emit, "rabbitmq-mgmt", ares_proto::observe_rabbitmq(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "rabbitmq-mgmt",
+                ares_proto::observe_rabbitmq(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "kubernetes-version" => {
             let e = emit.clone();
-            pack_observe(op, emit, "kubernetes-version", ares_proto::observe_kubernetes(op.addr, op.port, None, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "kubernetes-version",
+                ares_proto::observe_kubernetes(op.addr, op.port, None, move |ev| e(ev)),
+            )
+            .await;
         }
         "imap-banner" => {
             let e = emit.clone();
-            pack_observe(op, emit, "imap-banner", ares_proto::observe_imap(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "imap-banner",
+                ares_proto::observe_imap(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         "pop3-banner" => {
             let e = emit.clone();
-            pack_observe(op, emit, "pop3-banner", ares_proto::observe_pop3(op.addr, op.port, move |ev| e(ev))).await;
+            pack_observe(
+                op,
+                emit,
+                "pop3-banner",
+                ares_proto::observe_pop3(op.addr, op.port, move |ev| e(ev)),
+            )
+            .await;
         }
         _ => {}
     }
@@ -498,10 +678,7 @@ async fn pack_observe(
         Err(err) => {
             emit(Event::Log {
                 level: "debug".into(),
-                message: format!(
-                    "{probe} @{}:{} failed: {err}",
-                    op.addr, op.port
-                ),
+                message: format!("{probe} @{}:{} failed: {err}", op.addr, op.port),
             });
         }
     }

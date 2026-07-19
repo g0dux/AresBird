@@ -108,8 +108,8 @@ pub async fn post_json(url_str: &str, body: &serde_json::Value) -> anyhow::Resul
             .with_no_client_auth();
         cfg.alpn_protocols = vec![b"http/1.1".to_vec()];
         let connector = TlsConnector::from(Arc::new(cfg));
-        let name = ServerName::try_from(host.clone())
-            .map_err(|e| anyhow::anyhow!("bad SNI host: {e}"))?;
+        let name =
+            ServerName::try_from(host.clone()).map_err(|e| anyhow::anyhow!("bad SNI host: {e}"))?;
         let tls = timeout(Duration::from_secs(8), connector.connect(name, stream)).await??;
         exchange(&host, &path, &payload, tls).await
     } else {

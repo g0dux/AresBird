@@ -274,6 +274,49 @@ fn infer_from_text(text: &str) -> Option<(&'static str, f32)> {
         return Some(("Windows (OpenSSH)", 0.7));
     }
 
+    // HTTP / CDN / reverse proxies (soft host hints)
+    if t.contains("cloudflare") {
+        return Some(("CDN / Cloudflare edge (origin OS unknown)", 0.35));
+    }
+    if t.contains("nginx") {
+        return Some(("Linux/Unix (nginx common)", 0.35));
+    }
+    if t.contains("caddy") {
+        return Some(("Linux/Unix (Caddy)", 0.4));
+    }
+    if t.contains("lighttpd") {
+        return Some(("Linux/Unix (lighttpd)", 0.4));
+    }
+    if t.contains("gunicorn") || t.contains("uvicorn") || t.contains("werkzeug") {
+        return Some(("Linux/Unix (Python web)", 0.4));
+    }
+    if t.contains("jetty") || t.contains("tomcat") {
+        return Some(("Linux/Unix (Java servlet)", 0.4));
+    }
+    if t.contains("kestrel") {
+        return Some(("Windows/.NET (Kestrel) or cross-platform ASP.NET", 0.5));
+    }
+    if t.contains("gws") || t.contains("google frontend") {
+        return Some(("Google frontend / cloud edge", 0.35));
+    }
+    if t.contains("amazon cloudfront") || t.contains("cloudfront") {
+        return Some(("CDN / CloudFront edge (origin OS unknown)", 0.35));
+    }
+    if t.contains("akamai") {
+        return Some(("CDN / Akamai edge (origin OS unknown)", 0.35));
+    }
+
+    // Hypervisors / containers
+    if t.contains("vmware") || t.contains("esxi") {
+        return Some(("VMware ESXi / virtualization", 0.55));
+    }
+    if t.contains("xen") {
+        return Some(("Xen hypervisor guest/host", 0.4));
+    }
+    if t.contains("docker") || t.contains("containerd") {
+        return Some(("Linux (container runtime exposed)", 0.45));
+    }
+
     None
 }
 
@@ -336,5 +379,25 @@ mod tests {
             .unwrap()
             .0
             .contains("MongoDB"));
+    }
+
+    #[test]
+    fn nginx_and_cdn_hints() {
+        assert!(infer_from_text("Server: nginx/1.24.0")
+            .unwrap()
+            .0
+            .contains("nginx"));
+        assert!(infer_from_text("via: 1.1 cloudflare")
+            .unwrap()
+            .0
+            .contains("Cloudflare"));
+        assert!(
+            infer_from_text("Microsoft-HTTPAPI/2.0 Kestrel")
+                .unwrap()
+                .0
+                .to_ascii_lowercase()
+                .contains("kestrel")
+                || infer_from_text("Kestrel").unwrap().0.contains("Kestrel")
+        );
     }
 }

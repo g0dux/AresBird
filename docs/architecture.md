@@ -40,6 +40,8 @@ Opt-in only — never runs unless `--script-pack <id>` is set.
 ares scripts list
 ares scan 10.0.0.5 -p apps --script-pack default
 ares probe quick 10.0.0.5 --script-pack default
+ares scan 10.0.0.5 -p web --script-pack web
+ares scan 10.0.0.5 -p apps --script-pack infra
 ```
 
 Layout: `packs/<id>/pack.json` (+ optional `*/plugin.json` scripts). Default pack ships **builtins** in Rust (`ftp-banner`, `ssh-banner`, `http-server`, `smtp-banner`, `redis-info`) plus example `echo-open` script. Packs with `safe: true` skip `categories: ["aggressive"]`. Env: `ARES_PACKS_DIR`. Scaffold: `packs/_template/`.

@@ -1,0 +1,17 @@
+{
+  "id": "web",
+  "description": "Web/edge observe pack — HTTP banners + common app health endpoints (safe, opt-in)",
+  "version": "0.1.0",
+  "safe": true,
+  "builtins": [
+    "http-server",
+    "grafana-health",
+    "jenkins-headers",
+    "kibana-status",
+    "prometheus-healthy",
+    "elasticsearch-root",
+    "minio-health",
+    "rabbitmq-mgmt",
+    "kubernetes-version"
+  ]
+}

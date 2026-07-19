@@ -21,9 +21,7 @@ pub async fn observe_redis(
     emit: impl Fn(Event),
 ) -> anyhow::Result<Option<String>> {
     let mut stream = connect(addr, port).await?;
-    stream
-        .write_all(b"*1\r\n$4\r\nPING\r\n")
-        .await?;
+    stream.write_all(b"*1\r\n$4\r\nPING\r\n").await?;
     let mut buf = [0u8; 512];
     let n = timeout(Duration::from_secs(2), stream.read(&mut buf)).await??;
     if n == 0 {
@@ -122,8 +120,9 @@ pub async fn observe_mysql(
     }
 
     // Packet: 3-byte len LE, 1-byte seq, payload…
-    let payload = if n >= 5 && buf[0] as usize + ((buf[1] as usize) << 8) + ((buf[2] as usize) << 16)
-        <= n.saturating_sub(4)
+    let payload = if n >= 5
+        && buf[0] as usize + ((buf[1] as usize) << 8) + ((buf[2] as usize) << 16)
+            <= n.saturating_sub(4)
     {
         &buf[4..n]
     } else {
@@ -342,10 +341,16 @@ pub async fn observe_imap(
     port: u16,
     emit: impl Fn(Event),
 ) -> anyhow::Result<Option<String>> {
-    observe_line_banner(addr, port, "imap", |l| {
-        let lower = l.to_ascii_lowercase();
-        lower.contains("imap") || lower.starts_with("* ok") || lower.starts_with("* preauth")
-    }, emit)
+    observe_line_banner(
+        addr,
+        port,
+        "imap",
+        |l| {
+            let lower = l.to_ascii_lowercase();
+            lower.contains("imap") || lower.starts_with("* ok") || lower.starts_with("* preauth")
+        },
+        emit,
+    )
     .await
 }
 
@@ -355,10 +360,16 @@ pub async fn observe_pop3(
     port: u16,
     emit: impl Fn(Event),
 ) -> anyhow::Result<Option<String>> {
-    observe_line_banner(addr, port, "pop3", |l| {
-        let lower = l.to_ascii_lowercase();
-        lower.starts_with("+ok") || lower.contains("pop3")
-    }, emit)
+    observe_line_banner(
+        addr,
+        port,
+        "pop3",
+        |l| {
+            let lower = l.to_ascii_lowercase();
+            lower.starts_with("+ok") || lower.contains("pop3")
+        },
+        emit,
+    )
     .await
 }
 
@@ -557,7 +568,9 @@ fn bson_find_cstring(buf: &[u8], field: &str) -> Option<String> {
     needle.push(0x02);
     needle.extend_from_slice(field.as_bytes());
     needle.push(0);
-    let pos = buf.windows(needle.len()).position(|w| w == needle.as_slice())?;
+    let pos = buf
+        .windows(needle.len())
+        .position(|w| w == needle.as_slice())?;
     let start = pos + needle.len();
     if start + 4 > buf.len() {
         return None;
@@ -581,7 +594,9 @@ fn bson_find_i32(buf: &[u8], field: &str) -> Option<i32> {
     needle.push(0x10);
     needle.extend_from_slice(field.as_bytes());
     needle.push(0);
-    let pos = buf.windows(needle.len()).position(|w| w == needle.as_slice())?;
+    let pos = buf
+        .windows(needle.len())
+        .position(|w| w == needle.as_slice())?;
     let start = pos + needle.len();
     if start + 4 > buf.len() {
         return None;
@@ -714,9 +729,10 @@ pub async fn observe_memcached(
             });
             return Ok(None);
         }
-        let ver = stext
-            .lines()
-            .find_map(|l| l.strip_prefix("STAT version ").map(|v| v.trim().to_string()));
+        let ver = stext.lines().find_map(|l| {
+            l.strip_prefix("STAT version ")
+                .map(|v| v.trim().to_string())
+        });
         let detail = match &ver {
             Some(v) => format!("Memcached {v}"),
             None => "Memcached (stats ok)".into(),
@@ -774,10 +790,7 @@ fn emit_memcached(
 
 /// Minimal JSON string field extractor (`"key" : "value"`).
 fn json_string_field(json: &str, key: &str) -> Option<String> {
-    let patterns = [
-        format!("\"{key}\""),
-        format!("\"{key}\" "),
-    ];
+    let patterns = [format!("\"{key}\""), format!("\"{key}\" ")];
     for pat in &patterns {
         let mut rest = json;
         while let Some(i) = rest.find(pat.as_str()) {
@@ -831,7 +844,11 @@ pub async fn observe_kafka(
     }
     let mut resp = vec![0u8; resp_len.min(8192)];
     let to_read = resp.len();
-    timeout(Duration::from_secs(3), stream.read_exact(&mut resp[..to_read])).await??;
+    timeout(
+        Duration::from_secs(3),
+        stream.read_exact(&mut resp[..to_read]),
+    )
+    .await??;
     // Drain remainder if truncated for classification
     if resp_len > to_read {
         let mut sink = vec![0u8; (resp_len - to_read).min(64 * 1024)];
@@ -998,8 +1015,8 @@ pub async fn observe_amqp(
     } else {
         "AMQP broker"
     };
-    let version = amqp_table_shortstr(&ascii, "version")
-        .or_else(|| amqp_find_version_bytes(payload));
+    let version =
+        amqp_table_shortstr(&ascii, "version").or_else(|| amqp_find_version_bytes(payload));
     let detail = match &version {
         Some(v) => format!("{product} {v} (AMQP {major}.{minor})"),
         None => format!("{product} (AMQP {major}.{minor} Connection.Start)"),
@@ -1133,16 +1150,18 @@ pub async fn observe_mqtt(
         3 => "server unavailable",
         4 => "bad credentials",
         5 => "not authorized",
-        other => return {
-            emit(Event::ProbeResult {
-                addr,
-                port,
-                probe: "mqtt".into(),
-                detail: format!("CONNACK rc={other}"),
-                confidence: 0.7,
-            });
-            Ok(Some(format!("MQTT CONNACK rc={other}")))
-        },
+        other => {
+            return {
+                emit(Event::ProbeResult {
+                    addr,
+                    port,
+                    probe: "mqtt".into(),
+                    detail: format!("CONNACK rc={other}"),
+                    confidence: 0.7,
+                });
+                Ok(Some(format!("MQTT CONNACK rc={other}")))
+            }
+        }
     };
     let detail = format!("MQTT 3.1.1 CONNACK ({rc_label})");
     emit(Event::Banner {
@@ -1204,18 +1223,21 @@ pub async fn observe_nats(
         });
         return Ok(None);
     }
-    let json = line.strip_prefix("INFO ").or_else(|| line.strip_prefix("info ")).unwrap_or("");
+    let json = line
+        .strip_prefix("INFO ")
+        .or_else(|| line.strip_prefix("info "))
+        .unwrap_or("");
     let version = json_string_field(json, "version");
     let server_name = json_string_field(json, "server_name");
     let proto = json_string_field(json, "proto").or_else(|| {
         // proto is often a number
         let key = "\"proto\"";
         let i = json.find(key)?;
-        let after = json[i + key.len()..].trim_start().strip_prefix(':')?.trim_start();
-        let num: String = after
-            .chars()
-            .take_while(|c| c.is_ascii_digit())
-            .collect();
+        let after = json[i + key.len()..]
+            .trim_start()
+            .strip_prefix(':')?
+            .trim_start();
+        let num: String = after.chars().take_while(|c| c.is_ascii_digit()).collect();
         if num.is_empty() {
             None
         } else {
@@ -1304,7 +1326,9 @@ pub async fn observe_ldap(
         || ascii.contains("vendorName")
         || ascii.contains("dsServiceName")
         || ascii.contains("defaultNamingContext")
-        || buf[..n].windows(2).any(|w| w == [0x64, 0x84] || w[0] == 0x64); // searchResEntry
+        || buf[..n]
+            .windows(2)
+            .any(|w| w == [0x64, 0x84] || w[0] == 0x64); // searchResEntry
 
     if !looks {
         // Still might be searchResDone with resultCode success and empty entry
@@ -1321,8 +1345,8 @@ pub async fn observe_ldap(
         }
     }
 
-    let vendor = ldap_attr_value(&ascii, "vendorName")
-        .or_else(|| ldap_attr_value(&ascii, "vendorVersion"));
+    let vendor =
+        ldap_attr_value(&ascii, "vendorName").or_else(|| ldap_attr_value(&ascii, "vendorVersion"));
     let naming = ldap_attr_value(&ascii, "defaultNamingContext")
         .or_else(|| ldap_attr_value(&ascii, "namingContexts"));
     let dns = ldap_attr_value(&ascii, "dnsHostName");
@@ -1667,7 +1691,10 @@ pub async fn observe_kerberos(
             addr,
             port,
             probe: "kerberos".into(),
-            detail: format!("unexpected Kerberos tag 0x{:02x}", resp.first().unwrap_or(&0)),
+            detail: format!(
+                "unexpected Kerberos tag 0x{:02x}",
+                resp.first().unwrap_or(&0)
+            ),
             confidence: 0.35,
         });
         return Ok(None);
@@ -1733,10 +1760,7 @@ fn build_as_req(user: &str, realm: &str) -> Vec<u8> {
     let cname = principal_name(1, &[user]);
     let sname = principal_name(2, &["krbtgt", realm]);
     let mut body = Vec::new();
-    body.extend(der_ctx(
-        0,
-        &ber_tlv(0x03, &[0x00, 0x00, 0x00, 0x00, 0x00]),
-    ));
+    body.extend(der_ctx(0, &ber_tlv(0x03, &[0x00, 0x00, 0x00, 0x00, 0x00])));
     body.extend(der_ctx(1, &cname));
     body.extend(der_ctx(2, &ber_tlv(0x1b, realm.as_bytes())));
     body.extend(der_ctx(3, &sname));
@@ -1789,8 +1813,11 @@ fn krb_find_realm(buf: &[u8]) -> Option<String> {
                 let start = i + 1 + hdr;
                 if start + len <= buf.len() && len >= 2 && len <= 64 {
                     let s = String::from_utf8_lossy(&buf[start..start + len]).to_string();
-                    if s.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
-                        && (s.contains('.') || s.chars().all(|c| c.is_ascii_uppercase() || c == '-' || c.is_ascii_digit()))
+                    if s.chars()
+                        .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
+                        && (s.contains('.')
+                            || s.chars()
+                                .all(|c| c.is_ascii_uppercase() || c == '-' || c.is_ascii_digit()))
                         && s.to_ascii_lowercase() != "aresbird"
                         && s.to_ascii_lowercase() != "krbtgt"
                         && s.to_ascii_lowercase() != "unknown"
@@ -1992,10 +2019,10 @@ async fn winrm_exchange_tls(
     sni: &str,
     req: &[u8],
 ) -> anyhow::Result<String> {
-    use std::sync::Arc;
     use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier};
     use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
     use rustls::{ClientConfig, DigitallySignedStruct, Error as TlsError, SignatureScheme};
+    use std::sync::Arc;
     use tokio_rustls::TlsConnector;
 
     #[derive(Debug)]
@@ -2046,8 +2073,8 @@ async fn winrm_exchange_tls(
         .with_no_client_auth();
     cfg.alpn_protocols = vec![b"http/1.1".to_vec()];
     let connector = TlsConnector::from(Arc::new(cfg));
-    let name = ServerName::try_from(sni.to_string())
-        .map_err(|e| anyhow::anyhow!("bad SNI: {e}"))?;
+    let name =
+        ServerName::try_from(sni.to_string()).map_err(|e| anyhow::anyhow!("bad SNI: {e}"))?;
     let mut tls = timeout(Duration::from_secs(5), connector.connect(name, stream)).await??;
     tls.write_all(req).await?;
     let mut buf = vec![0u8; 4096];
@@ -2300,7 +2327,9 @@ pub async fn observe_docker(
         return Ok(Some(detail));
     }
 
-    let (st2, ver_body) = http_get_body(addr, port, "/version").await.unwrap_or((0, String::new()));
+    let (st2, ver_body) = http_get_body(addr, port, "/version")
+        .await
+        .unwrap_or((0, String::new()));
     let api = json_string_field(&ver_body, "ApiVersion");
     let ver = json_string_field(&ver_body, "Version");
     let detail = match (&api, &ver) {
@@ -2313,7 +2342,13 @@ pub async fn observe_docker(
     Ok(Some(detail))
 }
 
-fn emit_docker(addr: IpAddr, port: u16, detail: &str, version: Option<String>, emit: &impl Fn(Event)) {
+fn emit_docker(
+    addr: IpAddr,
+    port: u16,
+    detail: &str,
+    version: Option<String>,
+    emit: &impl Fn(Event),
+) {
     emit(Event::Banner {
         addr,
         port,
@@ -2352,7 +2387,10 @@ pub async fn observe_etcd(
     if st != 200 || !looks {
         let (st2, health) = http_get_body(addr, port, "/health").await?;
         if st2 == 200 && (health.contains("true") || health.contains("\"health\"")) {
-            let detail = format!("etcd health reachable ({})", health.chars().take(60).collect::<String>());
+            let detail = format!(
+                "etcd health reachable ({})",
+                health.chars().take(60).collect::<String>()
+            );
             emit_etcd(addr, port, &detail, None, &emit);
             return Ok(Some(detail));
         }
@@ -2376,7 +2414,13 @@ pub async fn observe_etcd(
     Ok(Some(detail))
 }
 
-fn emit_etcd(addr: IpAddr, port: u16, detail: &str, version: Option<String>, emit: &impl Fn(Event)) {
+fn emit_etcd(
+    addr: IpAddr,
+    port: u16,
+    detail: &str,
+    version: Option<String>,
+    emit: &impl Fn(Event),
+) {
     emit(Event::Banner {
         addr,
         port,
@@ -2416,7 +2460,8 @@ pub async fn observe_consul(
 
     if !looks_leader {
         let (st2, agent) = http_get_body(addr, port, "/v1/agent/self").await?;
-        if st2 != 200 || !(agent.contains("Config") || agent.contains("Member") || agent.contains("\"Name\""))
+        if st2 != 200
+            || !(agent.contains("Config") || agent.contains("Member") || agent.contains("\"Name\""))
         {
             emit(Event::ProbeResult {
                 addr,
@@ -2441,7 +2486,13 @@ pub async fn observe_consul(
     Ok(Some(detail))
 }
 
-fn emit_consul(addr: IpAddr, port: u16, detail: &str, version: Option<String>, emit: &impl Fn(Event)) {
+fn emit_consul(
+    addr: IpAddr,
+    port: u16,
+    detail: &str,
+    version: Option<String>,
+    emit: &impl Fn(Event),
+) {
     emit(Event::Banner {
         addr,
         port,
@@ -3617,8 +3668,7 @@ pub async fn observe_rabbitmq(
     let server = http_header_value(&raw, "Server").unwrap_or_default();
     let looks = lower.contains("rabbitmq management")
         || lower.contains("rabbitmq")
-        || (server.to_ascii_lowercase().contains("cowboy")
-            && matches!(st, 200 | 301 | 302 | 401));
+        || (server.to_ascii_lowercase().contains("cowboy") && matches!(st, 200 | 301 | 302 | 401));
 
     // Stronger check via API path (often 401 without creds).
     let mut api_hit = false;
@@ -4003,9 +4053,7 @@ pub async fn observe_jenkins(
         let (st2, raw2, body2) = http_get_raw(addr, port, "/").await?;
         let xj = http_header_value(&raw2, "X-Jenkins");
         let l2 = body2.to_ascii_lowercase();
-        if xj.is_none()
-            && !l2.contains("jenkins")
-            && http_header_value(&raw2, "X-Hudson").is_none()
+        if xj.is_none() && !l2.contains("jenkins") && http_header_value(&raw2, "X-Hudson").is_none()
         {
             emit(Event::ProbeResult {
                 addr,

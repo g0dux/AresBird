@@ -211,10 +211,7 @@ pub fn resolve_next_hop_macs(
 
     let mut out = HashMap::new();
     for (&dst, &hop) in &dst_to_hop {
-        let mac = hop_macs
-            .get(&hop)
-            .copied()
-            .unwrap_or(MacAddr::broadcast());
+        let mac = hop_macs.get(&hop).copied().unwrap_or(MacAddr::broadcast());
         out.insert(dst, mac);
     }
     out
