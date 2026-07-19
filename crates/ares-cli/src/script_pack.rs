@@ -270,7 +270,7 @@ pub async fn run_script_pack(
         if meta.safe && is_aggressive(&disc.manifest.categories) {
             continue;
         }
-        let Some(command) = disc.manifest.command.clone() else {
+        let Some(command) = disc.manifest.resolved_command().map(str::to_string) else {
             continue;
         };
         let Some(plugin) = script_plugin_from(&disc, command) else {

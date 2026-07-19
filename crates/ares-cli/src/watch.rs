@@ -225,10 +225,8 @@ async fn watch_pipeline_inner(
                         KeyCode::Backspace => {
                             port_input.pop();
                         }
-                        KeyCode::Char(c) if c.is_ascii_digit() => {
-                            if port_input.len() < 5 {
-                                port_input.push(c);
-                            }
+                        KeyCode::Char(c) if c.is_ascii_digit() && port_input.len() < 5 => {
+                            port_input.push(c);
                         }
                         _ => {}
                     }
@@ -248,6 +246,10 @@ async fn watch_pipeline_inner(
                     KeyCode::Char('P') => {
                         filter_port = None;
                         port_input.clear();
+                    }
+                    KeyCode::Char('?') | KeyCode::Char('h') => {
+                        done_msg =
+                            Some("s=sev cycle · c=CDN · p=port filter · P=clear · q=quit".into());
                     }
                     _ => {}
                 }
@@ -294,6 +296,7 @@ async fn watch_pipeline_inner(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_ui(
     f: &mut ratatui::Frame<'_>,
     title: &str,
@@ -312,7 +315,7 @@ fn draw_ui(
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(5),
             Constraint::Percentage(30),
             Constraint::Percentage(35),
             Constraint::Percentage(35),
@@ -323,7 +326,9 @@ fn draw_ui(
     let findings_n = g.finding_count();
     let hosts = g.hosts.len();
     let status = format!(
-        "AresBird watch · {title}  | hosts={hosts} open={opens} findings={findings_n}  | filter sev={} cdn={} port={}  | [s]ev [c]dn [p]ort [P]clear [q]uit{}",
+        "AresBird watch · {title}\n\
+         hosts={hosts} open={opens} findings={findings_n}  | sev={} cdn={} port={}\n\
+         keys: [s] severity  [c] CDN filter  [p] port  [P] clear port  [?] help  [q] quit{}",
         sev.label(),
         if filter_cdn { "on" } else { "off" },
         filter_port
@@ -332,13 +337,15 @@ fn draw_ui(
         if entering_port {
             format!("  port> {port_input}_")
         } else {
-            done_msg
-                .map(|m| format!("  ({m})"))
-                .unwrap_or_default()
+            done_msg.map(|m| format!("  ({m})")).unwrap_or_default()
         }
     );
     f.render_widget(
-        Paragraph::new(status).block(Block::default().borders(Borders::ALL).title("status")),
+        Paragraph::new(status).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("status · help on ?"),
+        ),
         chunks[0],
     );
 

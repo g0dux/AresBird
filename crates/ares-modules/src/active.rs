@@ -112,7 +112,6 @@ impl Module for ActiveMisconfigModule {
                 timeout: Duration::from_secs(6),
                 max_redirects: 0,
                 user_agent: ua,
-                ..Default::default()
             };
 
             for tp in open {
@@ -531,7 +530,7 @@ impl Module for ActiveMisconfigModule {
                             }
                         }
                     }
-                    5900 | 5901 | 5902 => {
+                    5900..=5902 => {
                         for addr in &addrs {
                             if ctx.is_cancelled() {
                                 break;
@@ -992,6 +991,7 @@ impl Module for ActiveMisconfigModule {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn assess_http_surface(
     addr: IpAddr,
     port: u16,

@@ -788,9 +788,6 @@ fn ssh_algs_summary(banner: &str) -> String {
         .strip_prefix("SSH-2.0-")
         .or_else(|| trimmed.strip_prefix("SSH-1.99-"))
         .unwrap_or(trimmed);
-    let version = product
-        .split(|c: char| c == '_' || c == ' ' || c == '-')
-        .nth(1)
-        .unwrap_or("?");
+    let version = product.split(['_', ' ', '-']).nth(1).unwrap_or("?");
     format!("product={product}; version_token={version}; auth=not-attempted")
 }

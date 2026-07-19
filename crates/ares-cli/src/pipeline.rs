@@ -50,6 +50,7 @@ pub struct WhenClause {
     pub findings_gte: Option<usize>,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run_pipeline(
     file: &Path,
     cli_mode: ScanMode,
@@ -210,6 +211,7 @@ fn step(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run_pipeline_owned(
     pipe: PipelineFile,
     display_name: &str,
@@ -245,6 +247,7 @@ pub struct WatchShared {
     pub cancel: tokio_util::sync::CancellationToken,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run_pipeline_owned_ex(
     pipe: PipelineFile,
     display_name: &str,

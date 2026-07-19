@@ -94,7 +94,7 @@ impl UdpScanner {
         cancel: CancellationToken,
         emit: impl Fn(Event) + Send + Sync + 'static,
     ) {
-        let concurrency = self.timing.concurrency.min(200).max(1);
+        let concurrency = self.timing.concurrency.clamp(1, 200);
         let sem = Arc::new(Semaphore::new(concurrency));
         let timeout_dur = self.timing.timeout;
         let emit = Arc::new(emit);

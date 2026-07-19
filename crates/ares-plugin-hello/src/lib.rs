@@ -23,6 +23,12 @@ pub extern "C" fn ares_plugin_description() -> *const c_char {
     DESC.as_ptr() as *const c_char
 }
 
+/// Run the plugin.
+///
+/// # Safety
+/// `req_json` must be null or a valid NUL-terminated C string readable for the
+/// duration of this call. The returned pointer (if non-null) must be freed with
+/// [`ares_plugin_free`].
 #[no_mangle]
 pub unsafe extern "C" fn ares_plugin_run(req_json: *const c_char) -> *mut c_char {
     if req_json.is_null() {
@@ -78,6 +84,11 @@ pub unsafe extern "C" fn ares_plugin_run(req_json: *const c_char) -> *mut c_char
     }
 }
 
+/// Free a string returned by [`ares_plugin_run`].
+///
+/// # Safety
+/// `ptr` must be null or a pointer previously returned by this plugin's
+/// `ares_plugin_run` / error path and not already freed.
 #[no_mangle]
 pub unsafe extern "C" fn ares_plugin_free(ptr: *mut c_char) {
     if ptr.is_null() {

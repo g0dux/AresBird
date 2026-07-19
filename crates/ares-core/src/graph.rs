@@ -79,7 +79,7 @@ impl AssetGraph {
                     Port {
                         port: *port,
                         protocol: protocol.clone(),
-                        state: state.clone(),
+                        state: *state,
                         rtt_ms: *rtt_ms,
                         service: None,
                         banner: None,
@@ -629,18 +629,17 @@ fn port_state_rank(s: &PortState) -> u8 {
 
 fn merge_port(dst: &mut Port, src: &Port) {
     if port_state_rank(&src.state) > port_state_rank(&dst.state) {
-        dst.state = src.state.clone();
+        dst.state = src.state;
     }
     if dst.rtt_ms.is_none() {
         dst.rtt_ms = src.rtt_ms;
     }
-    if dst.banner.is_none()
+    if (dst.banner.is_none()
         || src.banner.as_ref().map(|b| b.len()).unwrap_or(0)
-            > dst.banner.as_ref().map(|b| b.len()).unwrap_or(0)
+            > dst.banner.as_ref().map(|b| b.len()).unwrap_or(0))
+        && src.banner.is_some()
     {
-        if src.banner.is_some() {
-            dst.banner = src.banner.clone();
-        }
+        dst.banner = src.banner.clone();
     }
     match (&dst.service, &src.service) {
         (None, Some(s)) => dst.service = Some(s.clone()),

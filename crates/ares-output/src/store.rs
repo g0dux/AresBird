@@ -87,7 +87,7 @@ impl RunStore {
             let _ = conn.execute_batch(
                 "ALTER TABLE runs ADD COLUMN event_count INTEGER NOT NULL DEFAULT 0;",
             );
-            return Ok(Self { path, conn });
+            Ok(Self { path, conn })
         }
         #[cfg(not(feature = "sqlite"))]
         {

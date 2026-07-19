@@ -32,8 +32,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: clippy
-        # Warnings allowed for now; tighten to `-D warnings` after a cleanup pass.
-        run: cargo clippy --workspace --all-targets
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: test
         run: cargo test --workspace

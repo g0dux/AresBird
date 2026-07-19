@@ -223,6 +223,7 @@ impl HttpEngine {
     }
 
     /// Single GET under an existing cookie jar (observe-only). Used by `talk --repl`.
+    #[allow(clippy::too_many_arguments)]
     pub async fn session_get(
         &self,
         addr: IpAddr,
@@ -260,6 +261,7 @@ impl HttpEngine {
     /// Multi-path HTTP browse under one session: shares cookies across redirects + paths.
     ///
     /// Observe-only (GET). Useful for seeing auth walls / sticky cookies after landing.
+    #[allow(clippy::too_many_arguments)]
     pub async fn session_browse(
         &self,
         addr: IpAddr,
@@ -386,7 +388,7 @@ impl HttpEngine {
             if should_follow {
                 if let Some(loc) = header_value(&raw.headers, "location") {
                     let from = hop.url();
-                    match resolve_redirect(&hop, &loc).await {
+                    match resolve_redirect(&hop, loc).await {
                         Ok(next) => {
                             hops_done += 1;
                             emit(Event::ProbeResult {
@@ -551,6 +553,7 @@ impl HttpEngine {
         .await
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn exchange_io(
         &self,
         addr: IpAddr,
@@ -966,8 +969,7 @@ fn extract_html_title(body: &str) -> Option<String> {
     let rest_l = &after_l[open_end..];
     let close = rest_l.find("</title>")?;
     let title = rest[..close]
-        .replace('\n', " ")
-        .replace('\r', " ")
+        .replace(['\n', '\r'], " ")
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ");

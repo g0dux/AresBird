@@ -1,12 +1,14 @@
 {
   "name": "http-headers",
   "description": "Light HTTP GET / — emit Server/Via/X-Powered-By as NDJSON probe events",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "capabilities": ["passive"],
   "categories": ["safe", "web"],
   "emit": "ndjson",
   "default_ports": [80, 443, 8080, 8000, 8443, 8888],
   "timeout_secs": 15,
   "protocol": "tcp",
-  "command": "powershell -NoProfile -File run.ps1"
+  "command": "powershell -NoProfile -File run.ps1",
+  "command_windows": "powershell -NoProfile -File run.ps1",
+  "command_unix": "sh run.sh"
 }

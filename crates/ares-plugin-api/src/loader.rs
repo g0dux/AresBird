@@ -23,6 +23,12 @@ pub struct PluginManifest {
     pub library: Option<String>,
     /// Optional shell command for script-style plugins
     pub command: Option<String>,
+    /// Unix/macOS command override (`sh -c`). Falls back to `command`.
+    #[serde(default)]
+    pub command_unix: Option<String>,
+    /// Windows command override (`cmd /C`). Falls back to `command`.
+    #[serde(default)]
+    pub command_windows: Option<String>,
     /// `"command"` | `"native"` — default: try native first (on Windows, prefer command when both exist)
     pub prefer: Option<String>,
     /// Script plugin run timeout (seconds). Default 30.
@@ -46,6 +52,20 @@ pub struct PluginManifest {
     /// Port protocol filter for script packs: `tcp` | `udp` | `any` (default tcp).
     #[serde(default)]
     pub protocol: Option<String>,
+}
+
+impl PluginManifest {
+    /// Pick the OS-appropriate script command (`command_windows` / `command_unix` / `command`).
+    pub fn resolved_command(&self) -> Option<&str> {
+        #[cfg(windows)]
+        {
+            self.command_windows.as_deref().or(self.command.as_deref())
+        }
+        #[cfg(not(windows))]
+        {
+            self.command_unix.as_deref().or(self.command.as_deref())
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -115,7 +135,7 @@ fn prefer_command(manifest: &PluginManifest) -> bool {
         _ => {}
     }
     // Windows: SAC often blocks plugin DLLs from Desktop — prefer script when both exist.
-    cfg!(windows) && manifest.command.is_some() && manifest.library.is_some()
+    cfg!(windows) && manifest.resolved_command().is_some() && manifest.library.is_some()
 }
 
 pub fn map_capabilities(names: &[String]) -> Vec<Capability> {
@@ -344,7 +364,7 @@ pub fn register_discovered(registry: &mut PluginRegistry, root: impl AsRef<Path>
         let caps = map_capabilities(&plugin.manifest.capabilities);
 
         if want_command_first {
-            if let Some(command) = plugin.manifest.command.clone() {
+            if let Some(command) = plugin.manifest.resolved_command().map(str::to_string) {
                 register_script(registry, &plugin, command);
                 n += 1;
                 continue;
@@ -376,7 +396,7 @@ pub fn register_discovered(registry: &mut PluginRegistry, root: impl AsRef<Path>
                         eprintln!(
                             "[plugin] native `{}` failed ({e}); {}",
                             plugin.manifest.name,
-                            if plugin.manifest.command.is_some() {
+                            if plugin.manifest.resolved_command().is_some() {
                                 "falling back to command"
                             } else {
                                 "no command fallback — skipped (tip: set ARES_PLUGIN_PREFER_COMMAND=1 or copy DLL to %LOCALAPPDATA%\\aresbird-plugins)"
@@ -388,7 +408,7 @@ pub fn register_discovered(registry: &mut PluginRegistry, root: impl AsRef<Path>
         }
 
         if !want_command_first {
-            if let Some(command) = plugin.manifest.command.clone() {
+            if let Some(command) = plugin.manifest.resolved_command().map(str::to_string) {
                 register_script(registry, &plugin, command);
                 n += 1;
             }

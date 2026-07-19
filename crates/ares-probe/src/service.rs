@@ -41,7 +41,7 @@ pub async fn detect_service_ex(
         22 => {
             let emit2 = emit.clone();
             if let Ok(banner) = SshBanner::grab(addr, port, emit2).await {
-                guess_os_from_banner(addr, &banner, |e| emit(e));
+                guess_os_from_banner(addr, &banner, &emit);
             }
             return;
         }
@@ -56,7 +56,7 @@ pub async fn detect_service_ex(
                     .find(|(k, _)| k.eq_ignore_ascii_case("server"))
                     .map(|(_, v)| v.clone());
                 if let Some(ref s) = server {
-                    guess_os_from_banner(addr, s, |e| emit(e));
+                    guess_os_from_banner(addr, s, &emit);
                 }
                 emit(Event::ServiceDetected {
                     addr,
@@ -87,7 +87,7 @@ pub async fn detect_service_ex(
                     .find(|(k, _)| k.eq_ignore_ascii_case("server"))
                     .map(|(_, v)| v.clone());
                 if let Some(ref s) = server {
-                    guess_os_from_banner(addr, s, |e| emit(e));
+                    guess_os_from_banner(addr, s, &emit);
                 }
                 emit(Event::ServiceDetected {
                     addr,
@@ -126,7 +126,7 @@ pub async fn detect_service_ex(
                     .find(|(k, _)| k.eq_ignore_ascii_case("server"))
                     .map(|(_, v)| v.clone());
                 if let Some(ref s) = server {
-                    guess_os_from_banner(addr, s, |e| emit(e));
+                    guess_os_from_banner(addr, s, &emit);
                 }
                 if let Some(ref powered) = resp
                     .headers
@@ -134,7 +134,7 @@ pub async fn detect_service_ex(
                     .find(|(k, _)| k.eq_ignore_ascii_case("x-powered-by"))
                     .map(|(_, v)| v.clone())
                 {
-                    guess_os_from_banner(addr, powered, |e| emit(e));
+                    guess_os_from_banner(addr, powered, &emit);
                 }
                 for finding in ares_proto::assess_security_headers(&resp.headers, true) {
                     emit(Event::MisconfigFinding {
@@ -149,10 +149,8 @@ pub async fn detect_service_ex(
         }
         445 => {
             let emit2 = emit.clone();
-            if let Ok(dialect) = smb_negotiate(addr, port, emit2).await {
-                if let Some(d) = dialect {
-                    guess_os_from_smb(addr, &d, |e| emit(e));
-                }
+            if let Ok(Some(d)) = smb_negotiate(addr, port, emit2).await {
+                guess_os_from_smb(addr, &d, &emit);
             }
             return;
         }
@@ -184,14 +182,14 @@ pub async fn detect_service_ex(
         27017 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_mongodb(addr, port, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
         9200 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_elasticsearch(addr, port, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
@@ -293,7 +291,7 @@ pub async fn detect_service_ex(
                     .find(|(k, _)| k.eq_ignore_ascii_case("server"))
                     .map(|(_, v)| v.clone());
                 if let Some(ref s) = server {
-                    guess_os_from_banner(addr, s, |e| emit(e));
+                    guess_os_from_banner(addr, s, &emit);
                 }
                 emit(Event::ServiceDetected {
                     addr,
@@ -322,21 +320,21 @@ pub async fn detect_service_ex(
         11211 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_memcached(addr, port, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
         9092 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_kafka(addr, port, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
         5672 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_amqp(addr, port, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
@@ -348,14 +346,14 @@ pub async fn detect_service_ex(
         4222 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_nats(addr, port, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
         389 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_ldap(addr, port, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
@@ -368,11 +366,11 @@ pub async fn detect_service_ex(
         88 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_kerberos(addr, port, None, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
-        5900 | 5901 | 5902 => {
+        5900..=5902 => {
             let emit2 = emit.clone();
             let _ = observe_vnc(addr, port, emit2).await;
             return;
@@ -380,7 +378,7 @@ pub async fn detect_service_ex(
         5985 | 5986 => {
             let emit2 = emit.clone();
             if let Ok(Some(detail)) = observe_winrm(addr, port, emit2).await {
-                guess_os_from_banner(addr, &detail, |e| emit(e));
+                guess_os_from_banner(addr, &detail, &emit);
             }
             return;
         }
@@ -394,7 +392,7 @@ pub async fn detect_service_ex(
     }
 
     if let Some(banner) = grab_banner(addr, port, emit.clone()).await {
-        guess_os_correlated(addr, Some(&banner), observed_ttl, |e| emit(e));
+        guess_os_correlated(addr, Some(&banner), observed_ttl, &emit);
         let service = classify_banner(port, &banner);
         emit(Event::ServiceDetected {
             addr,
@@ -403,7 +401,7 @@ pub async fn detect_service_ex(
         });
     } else if port != 3389 {
         if let Some(ttl) = observed_ttl {
-            guess_os_correlated(addr, None, Some(ttl), |e| emit(e));
+            guess_os_correlated(addr, None, Some(ttl), &emit);
         }
         let name = well_known(port).unwrap_or("unknown");
         emit(Event::ServiceDetected {

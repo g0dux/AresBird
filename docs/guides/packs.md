@@ -28,4 +28,6 @@ Root: `./packs` or `ARES_PACKS_DIR`.
 
 Builtins are Rust observe wrappers (no shell). Scripts emit NDJSON `Event` lines.
 
+Use `command_windows` + `command_unix` in `plugin.json` so packs run on both OSes (`resolved_command()` picks one).
+
 **Safe packs** skip categories tagged `aggressive`.

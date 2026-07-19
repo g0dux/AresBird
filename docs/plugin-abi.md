@@ -31,8 +31,10 @@ and must return heap JSON freed via `ares_plugin_free`:
 | `version` | Semver string (informational) |
 | `author` | Maintainer (informational) |
 | `library` | Native DLL/SO name or path |
-| `command` | Script / shell command (`cmd /C` / `sh -c`) |
-| `prefer` | `"command"` or `"native"` — on **Windows**, if both `library` and `command` exist and `prefer` is unset, **command wins** (SAC-friendly) |
+| `command` | Script / shell command fallback (`cmd /C` / `sh -c`) |
+| `command_windows` | Windows-only command (preferred on Windows) |
+| `command_unix` | Unix/macOS command (preferred on Linux/macOS) |
+| `prefer` | `"command"` or `"native"` — on **Windows**, if both `library` and `command*` exist and `prefer` is unset, **command wins** (SAC-friendly) |
 | `timeout_secs` | Script timeout (default 30) |
 | `emit` | `"log"` (default) or `"ndjson"` — one `Event` JSON object per stdout line |
 | `default_ports` | Used when `ares plugin run` omits `-p` |

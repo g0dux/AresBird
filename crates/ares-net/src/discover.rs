@@ -141,7 +141,7 @@ async fn host_discover_tcp_icmp(
         shuffle_inplace(&mut ordered);
     }
     let rate = optional_limiter(rate_pps);
-    let concurrency = concurrency.max(1).min(512);
+    let concurrency = concurrency.clamp(1, 512);
     let sem = Arc::new(Semaphore::new(concurrency));
     let up: Arc<Mutex<Vec<IpAddr>>> = Arc::new(Mutex::new(Vec::new()));
     let emit = Arc::new(emit);

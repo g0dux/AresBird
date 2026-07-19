@@ -156,7 +156,7 @@ fn printable_strings(der: &[u8]) -> Vec<String> {
             let (len, n) = read_len(&der[i + 1..]);
             let start = i + 1 + n;
             if let Some(l) = len {
-                if start + l <= der.len() && l >= 2 && l <= 253 {
+                if start + l <= der.len() && (2..=253).contains(&l) {
                     if let Ok(s) = std::str::from_utf8(&der[start..start + l]) {
                         let t = s.trim();
                         if t.chars().all(|c| c.is_ascii_graphic() || c == ' ') {

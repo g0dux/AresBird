@@ -61,6 +61,10 @@ unsafe impl Sync for NativePlugin {}
 
 impl NativePlugin {
     /// Open a native plugin library and resolve required symbols.
+    ///
+    /// # Safety
+    /// Caller must ensure `path` points to a trusted native plugin matching the
+    /// AresBird ABI. Loading untrusted code is undefined behavior at the OS level.
     pub unsafe fn open(path: &Path) -> anyhow::Result<Self> {
         let lib =
             Library::new(path).map_err(|e| anyhow::anyhow!("load {}: {e}", path.display()))?;
@@ -170,12 +174,10 @@ impl Module for NativePlugin {
 }
 
 fn copy_local_enabled() -> bool {
-    matches!(
-        std::env::var("ARES_PLUGIN_COPY_LOCAL")
-            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-            .unwrap_or(false),
-        true
-    ) || cfg!(windows)
+    std::env::var("ARES_PLUGIN_COPY_LOCAL")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+        || cfg!(windows)
 }
 
 fn safe_plugin_dir() -> Option<PathBuf> {

@@ -1374,9 +1374,7 @@ fn sni_name_from_target(target: &str) -> Option<String> {
         target
     };
     let host = host.trim().trim_start_matches('[').trim_end_matches(']');
-    if host.parse::<IpAddr>().is_ok() {
-        None
-    } else if host.is_empty() {
+    if host.parse::<IpAddr>().is_ok() || host.is_empty() {
         None
     } else {
         Some(host.to_string())

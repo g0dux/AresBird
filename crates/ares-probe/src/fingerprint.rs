@@ -77,6 +77,54 @@ pub fn guess_os_correlated(
     }
 }
 
+/// Soft OS guess from multiple text signals (SSH banner + HTTP Server + TLS notes…).
+/// Picks the highest-confidence `infer_from_text` hit, then optionally correlates with TTL.
+pub fn guess_os_from_signals(
+    addr: IpAddr,
+    signals: &[&str],
+    observed_ttl: Option<u8>,
+    emit: impl Fn(Event),
+) {
+    let mut best: Option<(&'static str, f32)> = None;
+    for s in signals {
+        if s.trim().is_empty() {
+            continue;
+        }
+        if let Some((os, conf)) = infer_from_text(s) {
+            match best {
+                Some((_, bc)) if bc >= conf => {}
+                _ => best = Some((os, conf)),
+            }
+        }
+    }
+    let ttl_hit = observed_ttl.map(ttl_family);
+    match (best, ttl_hit) {
+        (Some((bos, bc)), Some((tos, tc))) => {
+            let b = bos.to_ascii_lowercase();
+            let t = tos.to_ascii_lowercase();
+            let agree_windows = b.contains("windows") && t.contains("windows");
+            let agree_unix = (b.contains("linux")
+                || b.contains("unix")
+                || b.contains("bsd")
+                || b.contains("darwin")
+                || b.contains("macos"))
+                && (t.contains("linux") || t.contains("unix"));
+            if agree_windows || agree_unix {
+                let conf = (bc + 0.2).min(0.94);
+                let label = format!("{bos} (multi-signal + TTL)");
+                emit_os_ttl(addr, &label, conf, observed_ttl, emit);
+            } else if bc >= tc {
+                emit_os_ttl(addr, bos, bc, observed_ttl, emit);
+            } else {
+                emit_os_ttl(addr, tos, tc, observed_ttl, emit);
+            }
+        }
+        (Some((os, conf)), None) => emit_os(addr, os, conf, emit),
+        (None, Some((os, conf))) => emit_os_ttl(addr, os, conf, observed_ttl, emit),
+        (None, None) => {}
+    }
+}
+
 /// SMB negotiate → soft Windows/Samba family hint.
 pub fn guess_os_from_smb(addr: IpAddr, dialect: &str, emit: impl Fn(Event)) {
     let d = dialect.to_ascii_uppercase();
@@ -399,5 +447,25 @@ mod tests {
                 .contains("kestrel")
                 || infer_from_text("Kestrel").unwrap().0.contains("Kestrel")
         );
+    }
+
+    #[test]
+    fn multi_signal_prefers_stronger() {
+        let addr = IpAddr::V4(Ipv4Addr::LOCALHOST);
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let e2 = events.clone();
+        guess_os_from_signals(
+            addr,
+            &["Server: nginx/1.24", "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3"],
+            Some(64),
+            move |e| e2.lock().unwrap().push(e),
+        );
+        let events = events.lock().unwrap();
+        assert!(!events.is_empty());
+        assert!(matches!(
+            &events[0],
+            Event::OsGuess { os, .. }
+                if os.contains("Ubuntu") || os.contains("nginx") || os.contains("Linux")
+        ));
     }
 }

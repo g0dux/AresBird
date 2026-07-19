@@ -290,10 +290,8 @@ impl EventCollector {
             _ => 0,
         };
         // key: (port, finding) -> (best severity, first addr, set of addrs)
-        let mut map: HashMap<
-            (Option<u16>, String),
-            (String, IpAddr, std::collections::HashSet<IpAddr>),
-        > = HashMap::new();
+        type FindingAgg = (String, IpAddr, std::collections::HashSet<IpAddr>);
+        let mut map: HashMap<(Option<u16>, String), FindingAgg> = HashMap::new();
         for (addr, port, severity, finding) in self.findings() {
             let key = (port, finding.clone());
             map.entry(key)

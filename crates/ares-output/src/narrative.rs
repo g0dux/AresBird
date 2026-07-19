@@ -115,7 +115,7 @@ pub fn format_why(steps: &[NarrativeStep]) -> String {
     }
     steps
         .iter()
-        .map(|s| format!("{}={}", s.kind, s.detail))
+        .map(|s| format!("[{}] {}", s.kind, s.detail))
         .collect::<Vec<_>>()
         .join(" → ")
 }
@@ -201,15 +201,40 @@ fn handoff_for(host: &str, port: u16, finding_l: &str, svc: Option<&str>) -> Opt
                 port
             };
             let why = finding_or_svc(finding_l, svc);
-            (
-                format!("ares talk {scheme}://{host}:{p}/ --session"),
-                format!("HTTP surface ({why})"),
-            )
+            // Prefer REPL when the finding smells like session/cookie work.
+            if finding_l.contains("cookie")
+                || finding_l.contains("session")
+                || finding_l.contains("auth")
+            {
+                (
+                    format!("ares talk {scheme}://{host}:{p}/ --repl"),
+                    format!("HTTP REPL session ({why})"),
+                )
+            } else {
+                (
+                    format!("ares talk {scheme}://{host}:{p}/ --session"),
+                    format!("HTTP surface ({why})"),
+                )
+            }
         }
         "http-repl" => (
             format!("ares talk http://{host}:{port}/ --repl"),
             "interactive HTTP observe".into(),
         ),
+        "redis" => {
+            let why = finding_or_svc(finding_l, svc);
+            (
+                format!("ares talk {host}:{port} --proto redis --repl"),
+                format!("Redis observe REPL ({why})"),
+            )
+        }
+        "ssh" => {
+            let why = finding_or_svc(finding_l, svc);
+            (
+                format!("ares talk {host}:{port} --proto ssh --repl"),
+                format!("SSH banner/algs observe — no shell ({why})"),
+            )
+        }
         other => {
             let why = finding_or_svc(finding_l, svc);
             (

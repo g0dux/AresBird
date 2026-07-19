@@ -562,9 +562,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                         } else if dbg.exists() {
                             dbg.display().to_string()
                         } else {
-                            format!(
-                                "cargo build -p ares-cli --release  → %LOCALAPPDATA%\\aresbird-target\\release\\ares.exe"
-                            )
+                            "cargo build -p ares-cli --release  → %LOCALAPPDATA%\\aresbird-target\\release\\ares.exe".to_string()
                         }
                     );
                 }
@@ -648,7 +646,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                         cap = cap.as_deref().unwrap_or("")
                     );
                 }
-                println!("{:<20} {:<40} {}", "NAME", "CAPABILITIES", "DESCRIPTION");
+                println!("{:<20} {:<40} DESCRIPTION", "NAME", "CAPABILITIES");
                 for m in registry.list() {
                     if let Some(c) = filter_cap {
                         if !m.capabilities().contains(&c) {
@@ -809,7 +807,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                     .values()
                     .filter(|h| !h.findings.is_empty())
                     .collect();
-                with_f.sort_by(|a, b| b.findings.len().cmp(&a.findings.len()));
+                with_f.sort_by_key(|b| std::cmp::Reverse(b.findings.len()));
                 for h in with_f.into_iter().take(8) {
                     let name = h.hostname.as_deref().unwrap_or("-");
                     println!("  · {} ({name}): {} finding(s)", h.addr, h.findings.len());
@@ -848,7 +846,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 println!("paths:      {}", graph.paths.len());
                 println!("sessions:   {}", graph.sessions.len());
                 let mut hosts: Vec<_> = graph.hosts.values().collect();
-                hosts.sort_by(|a, b| a.addr.cmp(&b.addr));
+                hosts.sort_by_key(|a| a.addr);
                 for h in hosts.into_iter().take(12) {
                     let opens: Vec<_> = h
                         .ports
@@ -1289,9 +1287,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 extra.insert(
                     "udp_ports".into(),
                     serde_json::Value::Array(
-                        list.into_iter()
-                            .map(|p| serde_json::Value::from(p))
-                            .collect(),
+                        list.into_iter().map(serde_json::Value::from).collect(),
                     ),
                 );
             }
@@ -1727,10 +1723,10 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 };
                 if fire {
                     let findings_json: Vec<serde_json::Value> =
-                        if baseline_id.is_some() && matches!(notify_on, NotifyOn::New) {
+                        if let (Some(bid), NotifyOn::New) = (baseline_id.as_ref(), &notify_on) {
                             // Prefer delta keys already printed; rebuild from current − baseline.
                             let store = RunStore::open_default()?;
-                            let (base, _) = store.load(baseline_id.unwrap())?;
+                            let (base, _) = store.load(*bid)?;
                             let diff =
                                 filter_diff_by_severity(diff_findings(&base, &collector), min_rank);
                             diff.added
@@ -1783,11 +1779,9 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                 }
             }
 
-            if fail_on_any {
-                if any_count > 0 {
-                    eprintln!("error: {any_count} finding(s) ≥ {min_severity} (--fail-on-any)");
-                    std::process::exit(2);
-                }
+            if fail_on_any && any_count > 0 {
+                eprintln!("error: {any_count} finding(s) ≥ {min_severity} (--fail-on-any)");
+                std::process::exit(2);
             }
             if fail_on_new && baseline_id.is_some() && new_count > 0 {
                 eprintln!(
@@ -2153,7 +2147,7 @@ async fn run_proto(
 ) -> anyhow::Result<()> {
     match action {
         ProtoCmd::List => {
-            println!("{:<16} {:>6}  {}", "PROTO", "PORT", "NOTES");
+            println!("{:<16} {:>6}  NOTES", "PROTO", "PORT");
             for (name, port, notes) in PROTO_CATALOG {
                 let p = port.map(|p| p.to_string()).unwrap_or_else(|| "-".into());
                 println!("{name:<16} {p:>6}  {notes}");
@@ -2276,6 +2270,7 @@ async fn run_proto(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_talk_proto(
     registry: &PluginRegistry,
     proto: &str,

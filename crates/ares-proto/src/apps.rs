@@ -1580,7 +1580,7 @@ pub async fn observe_vnc(
         .unwrap_or(0);
     let sec_detail = if sn >= 1 {
         let ntypes = sec[0] as usize;
-        if ntypes > 0 && ntypes < 16 && sn >= 1 + ntypes {
+        if ntypes > 0 && ntypes < 16 && sn > ntypes {
             let types: Vec<String> = sec[1..1 + ntypes]
                 .iter()
                 .map(|t| match t {
@@ -1811,16 +1811,16 @@ fn krb_find_realm(buf: &[u8]) -> Option<String> {
         if buf[i] == 0x1b {
             if let Some((len, hdr)) = ber_parse_len(&buf[i + 1..]) {
                 let start = i + 1 + hdr;
-                if start + len <= buf.len() && len >= 2 && len <= 64 {
+                if start + len <= buf.len() && (2..=64).contains(&len) {
                     let s = String::from_utf8_lossy(&buf[start..start + len]).to_string();
                     if s.chars()
                         .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
                         && (s.contains('.')
                             || s.chars()
                                 .all(|c| c.is_ascii_uppercase() || c == '-' || c.is_ascii_digit()))
-                        && s.to_ascii_lowercase() != "aresbird"
-                        && s.to_ascii_lowercase() != "krbtgt"
-                        && s.to_ascii_lowercase() != "unknown"
+                        && !s.eq_ignore_ascii_case("aresbird")
+                        && !s.eq_ignore_ascii_case("krbtgt")
+                        && !s.eq_ignore_ascii_case("unknown")
                     {
                         return Some(s);
                     }
@@ -2233,7 +2233,7 @@ fn snmp_extract_octet_string(buf: &[u8]) -> Option<String> {
         if buf[i] == 0x04 {
             if let Some((len, hdr)) = ber_parse_len(&buf[i + 1..]) {
                 let start = i + 1 + hdr;
-                if start + len <= buf.len() && len >= 3 && len <= 512 {
+                if start + len <= buf.len() && (3..=512).contains(&len) {
                     let raw = &buf[start..start + len];
                     let printable = raw
                         .iter()
