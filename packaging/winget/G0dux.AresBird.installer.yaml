@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: G0dux.AresBird
+PackageVersion: 0.1.0
+Platform:
+  - Windows.Desktop
+MinimumOSVersion: 10.0.17763.0
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles:
+  - RelativeFilePath: ares-x86_64-pc-windows-msvc/ares.exe
+    PortableCommandAlias: ares
+InstallModes:
+  - silent
+UpgradeBehavior: install
+ReleaseDate: 2026-07-19
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/g0dux/AresBird/releases/download/v0.1.0/ares-x86_64-pc-windows-msvc.zip
+    InstallerSha256: 7801DA239687EE2A519B41E63A29DE7E775352FC2530C5139A9263738A8EAB08
+    # Filled from v0.1.0 release asset
+ManifestType: installer
+ManifestVersion: 1.6.0

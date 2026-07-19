@@ -122,6 +122,9 @@ ares report graph --format mermaid
 ares report prune --keep 20
 ares report export --min-severity high --format csv
 ares report export --format md --out report.md
+ares report baseline set          # pin last run as day-to-day baseline
+ares report delta                 # new findings vs pinned baseline
+ares report delta --fail-on-new   # exit 2 if new ≥ min-severity
 ```
 
 > **Windows / Smart App Control:** target dir is `%LOCALAPPDATA%\aresbird-target` (not Desktop). TLS is **ring-only** (no `aws-lc-sys`). If `cargo build --release` fails with os error **4551** (SAC blocked a `build-script-build`), use `cargo build -p ares-cli --profile dist` or fall back to debug + `. .\scripts\path-aresbird.ps1 -DebugBuild`.

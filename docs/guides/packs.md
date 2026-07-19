@@ -14,8 +14,11 @@ ares probe quick 10.0.0.5 --script-pack web
 | Pack | Focus |
 |------|--------|
 | `default` | Broad safe builtins + `echo-open` example script |
-| `web` | HTTP / app health builtins + `http-headers` script (Windows PowerShell) |
+| `web` | HTTP / app health builtins + `http-headers` script |
 | `infra` | DBs, queues, containers, SSH banner |
+| `cloud` | Docker / K8s / etcd / Consul / MinIO / Grafana / Prometheus |
+| `db` | MySQL, Postgres, Mongo, Redis, MSSQL, … |
+| `exposure` | High-risk unauth / network-exposed services |
 
 Root: `./packs` or `ARES_PACKS_DIR`.
 

@@ -6,7 +6,9 @@ use ares_core::event::Event;
 use ares_plugin_api::{BoxFuture, Capability, Module, ModuleCtx, Permissions};
 use ares_proto::http::{assess_security_headers, HttpEngine, HttpResponse};
 use ares_proto::tls_observe::observe_tls_preview;
-use tokio::time::sleep;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
+use tokio::time::{sleep, timeout};
 
 use crate::paths::{self, PathProfile};
 
@@ -1028,6 +1030,16 @@ async fn assess_http_surface(
         });
     }
 
+    // TRACE can enable XST / information disclosure when enabled.
+    if let Ok(true) = probe_http_trace(addr, port, https, host).await {
+        ctx.emit(Event::MisconfigFinding {
+            addr,
+            port: Some(port),
+            finding: "HTTP TRACE method enabled".into(),
+            severity: "low".into(),
+        });
+    }
+
     if !do_paths || !should_probe_paths(&resp.status_line) {
         if do_paths {
             ctx.emit(Event::Log {
@@ -1166,4 +1178,34 @@ fn looks_versioned_disclosure(server: &str) -> bool {
             || s.contains("tomcat")
             || s.contains("jetty")
             || s.contains("openresty"))
+}
+
+/// Cleartext TRACE probe (skip TLS — keep misconfig cheap/safe).
+async fn probe_http_trace(
+    addr: IpAddr,
+    port: u16,
+    https: bool,
+    host: &str,
+) -> anyhow::Result<bool> {
+    if https {
+        return Ok(false);
+    }
+    let sa = std::net::SocketAddr::new(addr, port);
+    let mut stream = timeout(Duration::from_secs(2), TcpStream::connect(sa)).await??;
+    let req = format!(
+        "TRACE / HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"
+    );
+    timeout(Duration::from_secs(2), stream.write_all(req.as_bytes())).await??;
+    let mut buf = [0u8; 1024];
+    let n = timeout(Duration::from_secs(2), stream.read(&mut buf))
+        .await
+        .unwrap_or(Ok(0))
+        .unwrap_or(0);
+    if n == 0 {
+        return Ok(false);
+    }
+    let text = String::from_utf8_lossy(&buf[..n]);
+    let ok = text.contains("200")
+        && (text.to_ascii_lowercase().contains("trace /") || text.contains("TRACE /"));
+    Ok(ok)
 }

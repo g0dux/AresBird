@@ -1,0 +1,20 @@
+{
+  "id": "exposure",
+  "description": "High-risk unauthenticated / network-exposed service observes (safe, opt-in)",
+  "version": "0.1.0",
+  "safe": true,
+  "builtins": [
+    "redis-info",
+    "elasticsearch-root",
+    "memcached-stats",
+    "mongodb-hello",
+    "docker-version",
+    "etcd-version",
+    "consul-leader",
+    "couchdb-welcome",
+    "zookeeper-ruok",
+    "prometheus-healthy",
+    "neo4j-discovery",
+    "jenkins-headers"
+  ]
+}

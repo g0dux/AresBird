@@ -655,6 +655,27 @@ impl Renderer {
                 println!("  → {}  # {}", h.cmd, h.reason);
             }
         }
+
+        let mut fixes = Vec::new();
+        for (_addr, _port, severity, finding, _) in &findings {
+            if !matches!(severity.as_str(), "high" | "medium") {
+                continue;
+            }
+            if let Some(fix) = crate::remediation::remediation_for(finding) {
+                fixes.push((severity.clone(), finding.clone(), fix));
+            }
+        }
+        if !fixes.is_empty() {
+            println!();
+            println!("{}", paint(self.color, style("FIX").bold()));
+            for (sev, finding, fix) in fixes.into_iter().take(12) {
+                println!(
+                    "  · [{sev}] {}",
+                    finding.chars().take(64).collect::<String>()
+                );
+                println!("      → {fix}");
+            }
+        }
     }
 }
 
@@ -664,7 +685,34 @@ pub fn render_markdown(
     graph: &AssetGraph,
     min_finding_rank: u8,
 ) -> String {
+    let generated = chrono::Utc::now().to_rfc3339();
+    let findings = filter_findings_collapsed(collector.findings_collapsed(), min_finding_rank);
+    let mut sev_counts = [0usize; 5]; // high, medium, low, info, other
+    for (_, _, severity, _, _) in &findings {
+        match severity.as_str() {
+            "high" => sev_counts[0] += 1,
+            "medium" => sev_counts[1] += 1,
+            "low" => sev_counts[2] += 1,
+            "info" => sev_counts[3] += 1,
+            _ => sev_counts[4] += 1,
+        }
+    }
+
     let mut out = String::from("# AresBird Report\n\n");
+    out.push_str(&format!("_Generated: `{generated}`_\n\n"));
+    out.push_str("## Executive summary\n\n");
+    out.push_str(&format!(
+        "| High | Medium | Low | Info | Hosts | Open ports |\n| ---: | ---: | ---: | ---: | ---: | ---: |\n| {} | {} | {} | {} | {} | {} |\n\n",
+        sev_counts[0],
+        sev_counts[1],
+        sev_counts[2],
+        sev_counts[3],
+        graph.hosts.len(),
+        graph.open_services().len()
+    ));
+    out.push_str(
+        "- [Open ports](#open-ports)\n- [Findings](#findings)\n- [Remediation](#remediation)\n- [Next steps](#next-talk-handoff)\n- [Intel](#intel)\n\n",
+    );
 
     out.push_str("## Open ports\n\n");
     out.push_str("| Host | Port | Proto | Service | Banner |\n");
@@ -706,7 +754,6 @@ pub fn render_markdown(
         }
     }
 
-    let findings = filter_findings_collapsed(collector.findings_collapsed(), min_finding_rank);
     if !findings.is_empty() {
         out.push_str("\n## Findings\n\n");
         out.push_str("| Severity | Host | Port | Peers | Finding | Why |\n");
@@ -734,6 +781,21 @@ pub fn render_markdown(
             for step in chain {
                 out.push_str(&format!("  - `{}`: {}\n", step.kind, step.detail));
             }
+        }
+
+        out.push_str("\n## Remediation\n\n");
+        let mut any_fix = false;
+        for (_addr, _port, severity, finding, _) in &findings {
+            if let Some(fix) = crate::remediation::remediation_for(finding) {
+                any_fix = true;
+                out.push_str(&format!(
+                    "### [{severity}] {}\n\n{fix}\n\n",
+                    finding.replace('|', "\\|")
+                ));
+            }
+        }
+        if !any_fix {
+            out.push_str("_No automated remediation hints for these findings._\n");
         }
     }
 

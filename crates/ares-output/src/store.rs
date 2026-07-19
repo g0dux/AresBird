@@ -289,7 +289,10 @@ impl RunStore {
     /// Keep the newest `keep` runs for a given module name. Returns deleted count.
     #[cfg(feature = "sqlite")]
     pub fn prune_named(&self, name: &str, keep: usize) -> anyhow::Result<usize> {
-        let keep = keep.max(1) as i64;
+        if keep == 0 {
+            return self.delete_named(name);
+        }
+        let keep = keep as i64;
         let n = self.conn.execute(
             "DELETE FROM runs WHERE name = ?1 AND id NOT IN (
                 SELECT id FROM (
@@ -298,6 +301,15 @@ impl RunStore {
              )",
             rusqlite::params![name, keep],
         )?;
+        Ok(n)
+    }
+
+    /// Delete every run with this exact name.
+    #[cfg(feature = "sqlite")]
+    pub fn delete_named(&self, name: &str) -> anyhow::Result<usize> {
+        let n = self
+            .conn
+            .execute("DELETE FROM runs WHERE name = ?1", [name])?;
         Ok(n)
     }
 

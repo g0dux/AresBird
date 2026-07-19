@@ -2,6 +2,7 @@
 
 pub mod diff;
 pub mod narrative;
+pub mod remediation;
 pub mod render;
 pub mod store;
 
@@ -13,5 +14,6 @@ pub use diff::{
 pub use narrative::{
     evidence_chain, format_why, suggest_talk_handoffs, NarrativeStep, TalkHandoff,
 };
+pub use remediation::remediation_for;
 pub use render::{findings_to_csv, findings_to_csv_min, render_markdown, OutputFormat, Renderer};
 pub use store::{RunMeta, RunStats, RunStore};

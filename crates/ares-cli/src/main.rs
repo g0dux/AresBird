@@ -407,6 +407,36 @@ enum ReportCmd {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    /// Pin / show / clear the day-to-day findings baseline
+    Baseline {
+        #[command(subcommand)]
+        action: BaselineCmd,
+    },
+    /// Diff current (or --current UUID) findings vs pinned baseline
+    Delta {
+        /// Current run UUID (default: newest non-baseline run)
+        #[arg(long)]
+        current: Option<String>,
+        #[arg(long, default_value = "table")]
+        format: String,
+        #[arg(long)]
+        out: Option<PathBuf>,
+        #[arg(long, default_value = "info")]
+        min_severity: String,
+        /// Exit 2 when there are new findings ≥ min-severity
+        #[arg(long)]
+        fail_on_new: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum BaselineCmd {
+    /// Pin a stored run as baseline (default: last run)
+    Set { run_id: Option<String> },
+    /// Show pinned baseline meta
+    Show,
+    /// Remove pinned baseline copies
+    Clear,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -592,7 +622,10 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
             println!("fingerprint: soft OS hints (TTL/banner/SMB) — not Nmap -O");
             println!("talk --repl: http|https|redis duplex; ssh = observe-only (no shell)");
             println!("install:     cargo install --path crates/ares-cli  OR GitHub Releases");
-            println!("packs:       default | web | infra  (ares scripts list)");
+            println!(
+                "packs:       default | web | infra | cloud | db | exposure  (ares scripts list)"
+            );
+            println!("baseline:    ares report baseline set | ares report delta");
             for (k, label) in [
                 ("ARES_DATA_DIR", "store directory"),
                 ("ARES_STORE_PATH", "runs.db path"),
@@ -1058,6 +1091,137 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                     );
                 } else {
                     print!("{body}");
+                }
+            }
+            ReportCmd::Baseline { action } => {
+                const PIN: &str = "pinned-baseline";
+                let store = RunStore::open_default()?;
+                match action {
+                    BaselineCmd::Set { run_id } => {
+                        let id = if let Some(rid) = run_id {
+                            uuid::Uuid::parse_str(&rid)?
+                        } else {
+                            let runs = store.list(20)?;
+                            let Some((id, _, _)) = runs
+                                .iter()
+                                .find(|(_, name, _)| name != PIN)
+                                .or_else(|| runs.first())
+                            else {
+                                anyhow::bail!("no stored runs to pin");
+                            };
+                            *id
+                        };
+                        let (collector, graph) = store.load(id)?;
+                        let _ = store.prune_named(PIN, 0)?;
+                        let pin_id = store.save(PIN, &collector, &graph)?;
+                        println!("pinned baseline ← run {id}");
+                        println!("baseline id:  {pin_id}");
+                        println!("name:         {PIN}");
+                        println!("tip: ares report delta   # compare latest vs this baseline");
+                    }
+                    BaselineCmd::Show => {
+                        if let Some(bid) = store.latest_named(PIN)? {
+                            let s = store.stats(bid)?;
+                            println!("pinned baseline: {bid}");
+                            println!("created:         {}", s.created_at.to_rfc3339());
+                            println!("events:          {}", s.event_count);
+                            println!("findings:        {}", s.findings);
+                            println!("ports_open:      {}", s.ports_open);
+                        } else {
+                            println!("no pinned baseline (ares report baseline set)");
+                        }
+                    }
+                    BaselineCmd::Clear => {
+                        let n = store.prune_named(PIN, 0)?;
+                        println!("cleared {n} pinned baseline run(s)");
+                    }
+                }
+            }
+            ReportCmd::Delta {
+                current,
+                format,
+                out,
+                min_severity,
+                fail_on_new,
+            } => {
+                const PIN: &str = "pinned-baseline";
+                let store = RunStore::open_default()?;
+                let Some(base_id) = store.latest_named(PIN)? else {
+                    anyhow::bail!("no pinned baseline — run: ares report baseline set");
+                };
+                let cur_id = if let Some(rid) = current {
+                    uuid::Uuid::parse_str(&rid)?
+                } else {
+                    let runs = store.list(30)?;
+                    let Some((id, _, _)) = runs.iter().find(|(_, name, _)| name != PIN) else {
+                        anyhow::bail!("no current run to compare");
+                    };
+                    *id
+                };
+                let min_rank = parse_min_severity(&min_severity)?;
+                let (base, _) = store.load(base_id)?;
+                let (cur, _) = store.load(cur_id)?;
+                let mut diff = diff_findings(&base, &cur);
+                diff = filter_diff_by_severity(diff, min_rank);
+                let new_n = diff.added.len();
+                if matches!(format.as_str(), "csv") {
+                    let csv = findings_diff_to_csv(&diff);
+                    if let Some(path) = out {
+                        std::fs::write(&path, &csv)?;
+                        eprintln!("delta csv → {}", path.display());
+                    } else {
+                        print!("{csv}");
+                    }
+                } else {
+                    println!("baseline: {base_id}");
+                    println!("current:  {cur_id}");
+                    println!(
+                        "delta:    +{} new  -{} gone  ={} same  (min={min_severity})",
+                        diff.added.len(),
+                        diff.removed.len(),
+                        diff.unchanged
+                    );
+                    if !diff.added.is_empty() {
+                        println!("\nNEW:");
+                        for r in &diff.added {
+                            let p = r.port.map(|x| x.to_string()).unwrap_or_else(|| "-".into());
+                            println!(
+                                "  + [{}] {}:{} (peers={}) {}",
+                                r.severity, r.host, p, r.peers, r.finding
+                            );
+                            if let Some(fix) = ares_output::remediation_for(&r.finding) {
+                                println!("      fix → {fix}");
+                            }
+                        }
+                    }
+                    if !diff.removed.is_empty() {
+                        println!("\nGONE:");
+                        for r in &diff.removed {
+                            let p = r.port.map(|x| x.to_string()).unwrap_or_else(|| "-".into());
+                            println!("  - [{}] {}:{} {}", r.severity, r.host, p, r.finding);
+                        }
+                    }
+                    if let Some(path) = out {
+                        let mut body = format!(
+                            "# AresBird delta\n\nbaseline: `{base_id}`\ncurrent: `{cur_id}`\n\n## New ({})\n\n",
+                            diff.added.len()
+                        );
+                        for r in &diff.added {
+                            let p = r.port.map(|x| x.to_string()).unwrap_or_else(|| "-".into());
+                            body.push_str(&format!(
+                                "- **{}** `{}:{p}` — {}\n",
+                                r.severity, r.host, r.finding
+                            ));
+                            if let Some(fix) = ares_output::remediation_for(&r.finding) {
+                                body.push_str(&format!("  - fix: {fix}\n"));
+                            }
+                        }
+                        std::fs::write(&path, body)?;
+                        eprintln!("wrote delta notes → {}", path.display());
+                    }
+                }
+                if fail_on_new && new_n > 0 {
+                    std::process::exit(2);
                 }
             }
         },
