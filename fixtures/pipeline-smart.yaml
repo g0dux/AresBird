@@ -1,0 +1,31 @@
+# Smart lab playbook: vars + open ports + when + on_fail
+name: smart-lab-${profile}
+mode: ${mode}
+vars:
+  target: 127.0.0.1
+  profile: apps
+  mode: normal
+targets:
+  - ${target}
+steps:
+  - module: discover
+  - module: scan
+    ports: ${profile}
+  - module: service
+    ports: open
+    when:
+      open_any: true
+  - module: active-misconfig
+    ports: "open:web"
+    when:
+      open_ports: [80, 443, 8080, 8443]
+    extra:
+      path_probes: true
+      path_profile: web
+    on_fail: continue
+  - module: talk
+    when:
+      open_ports: [22]
+    extra:
+      proto: ssh
+    on_fail: continue

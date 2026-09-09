@@ -1,0 +1,8 @@
+# Portable Cargo config (do not hardcode machine paths — breaks Linux CI).
+#
+# On Windows Desktop, Smart App Control often blocks builds under the repo.
+# Set once per shell (or PersistUser via scripts/path-aresbird.ps1 after build):
+#   $env:CARGO_TARGET_DIR = "$env:LOCALAPPDATA\aresbird-target"
+#
+# Optional local override (gitignored): copy this file to config.local.toml is NOT
+# supported by Cargo — use the env var above instead.

@@ -1,0 +1,24 @@
+{
+  "id": "db",
+  "description": "Database & datastore observe pack (safe, opt-in)",
+  "version": "0.3.0",
+  "safe": true,
+  "builtins": [
+    "mysql-greeting",
+    "postgres-startup",
+    "mongodb-hello",
+    "redis-info",
+    "mssql-prelogin",
+    "cassandra-options",
+    "couchdb-welcome",
+    "neo4j-discovery",
+    "clickhouse-ping",
+    "memcached-stats",
+    "influxdb-health",
+    "rethinkdb-handshake",
+    "scylla-rest",
+    "solr-system",
+    "hazelcast-cluster",
+    "opensearch-root"
+  ]
+}

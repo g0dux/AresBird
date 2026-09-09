@@ -1,0 +1,14 @@
+{
+  "name": "echo-open",
+  "description": "Example pack script — logs matched open ports as NDJSON events",
+  "version": "0.1.1",
+  "capabilities": ["passive", "misconfig"],
+  "categories": ["safe", "example"],
+  "emit": "ndjson",
+  "default_ports": [],
+  "timeout_secs": 10,
+  "protocol": "tcp",
+  "command": "powershell -NoProfile -File run.ps1",
+  "command_windows": "powershell -NoProfile -File run.ps1",
+  "command_unix": "sh run.sh"
+}

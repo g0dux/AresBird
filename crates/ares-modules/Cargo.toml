@@ -1,0 +1,25 @@
+[package]
+name = "ares-modules"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Built-in AresBird modules: discover, scan, service, recon, active checks"
+
+[features]
+default = []
+raw = ["ares-net/raw"]
+
+[dependencies]
+ares-core = { workspace = true }
+ares-net = { workspace = true }
+ares-proto = { workspace = true }
+ares-probe = { workspace = true }
+ares-plugin-api = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+ipnet = { workspace = true }
+futures = { workspace = true }
+url = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,23 @@
+{
+  "id": "infra",
+  "description": "Infra/data-plane observe pack — DBs, queues, containers (safe, opt-in)",
+  "version": "0.1.0",
+  "safe": true,
+  "builtins": [
+    "ssh-banner",
+    "redis-info",
+    "mysql-greeting",
+    "postgres-startup",
+    "mongodb-hello",
+    "memcached-stats",
+    "docker-version",
+    "etcd-version",
+    "consul-leader",
+    "amqp-start",
+    "nats-info",
+    "kafka-versions",
+    "zookeeper-ruok",
+    "cassandra-options",
+    "mssql-prelogin"
+  ]
+}

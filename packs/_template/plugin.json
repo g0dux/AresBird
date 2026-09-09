@@ -1,0 +1,12 @@
+{
+  "name": "my-script",
+  "description": "NSE-style pack script scaffold (copy under packs/<id>/)",
+  "version": "0.1.0",
+  "capabilities": ["passive", "misconfig"],
+  "categories": ["safe"],
+  "emit": "ndjson",
+  "default_ports": [80, 443],
+  "timeout_secs": 10,
+  "protocol": "tcp",
+  "command": "powershell -NoProfile -File run.ps1"
+}

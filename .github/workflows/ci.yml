@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+env:
+  CARGO_TERM_COLOR: always
+  # Override any local target-dir habits; keep artifacts in-repo for the runner.
+  CARGO_TARGET_DIR: ${{ github.workspace }}/target
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: fmt
+        run: cargo fmt --all -- --check
+
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: test
+        run: cargo test --workspace
+
+      - name: build ares (release)
+        run: cargo build -p ares-cli --release
+
+      - name: smoke CLI
+        env:
+          ARES_QUIET: "1"
+        run: |
+          set -euo pipefail
+          BIN=./target/release/ares
+          "$BIN" version -q
+          "$BIN" doctor -q
+          "$BIN" scripts list -q
+          "$BIN" scan 127.0.0.1 -p 22,80,443 -m fast -q --ephemeral
+          "$BIN" probe quick 127.0.0.1 -m fast -q --ephemeral

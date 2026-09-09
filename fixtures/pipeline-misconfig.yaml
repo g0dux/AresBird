@@ -1,0 +1,16 @@
+# Full lab: discover → scan apps → service → misconfig checks
+name: misconfig-apps
+mode: normal
+targets:
+  - 127.0.0.1
+steps:
+  - module: discover
+  - module: scan
+    ports: apps
+  - module: service
+    ports: apps
+  - module: active-misconfig
+    ports: apps
+    extra:
+      path_probes: true
+      path_delay_ms: 120

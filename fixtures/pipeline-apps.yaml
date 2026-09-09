@@ -1,0 +1,11 @@
+name: apps-surface
+mode: normal
+targets:
+  - 127.0.0.1
+steps:
+  - module: discover
+  - module: scan
+    ports: apps
+  - module: service
+    ports: apps
+  - module: asn

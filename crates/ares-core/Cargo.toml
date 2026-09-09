@@ -1,0 +1,20 @@
+[package]
+name = "ares-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AresBird network interaction fabric: jobs, graph, events, orchestration"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+parking_lot = { workspace = true }
+ipnet = { workspace = true }
+async-trait = { workspace = true }
+tokio-util = { workspace = true }

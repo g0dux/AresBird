@@ -1,0 +1,23 @@
+{
+  "id": "cloud",
+  "description": "Cloud / control-plane observe — containers, orchestrators, object storage (safe)",
+  "version": "0.3.0",
+  "safe": true,
+  "builtins": [
+    "docker-version",
+    "kubernetes-version",
+    "etcd-version",
+    "consul-leader",
+    "minio-health",
+    "rabbitmq-mgmt",
+    "grafana-health",
+    "prometheus-healthy",
+    "elastic-apm-root",
+    "grpc-http2",
+    "vault-health",
+    "nomad-agent",
+    "keycloak-realm",
+    "portainer-status",
+    "argocd-version"
+  ]
+}

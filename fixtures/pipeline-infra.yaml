@@ -1,0 +1,10 @@
+name: infra-identity
+mode: normal
+targets:
+  - 127.0.0.1
+steps:
+  - module: discover
+  - module: scan
+    ports: infra
+  - module: service
+    ports: infra
